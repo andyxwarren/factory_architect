@@ -281,8 +281,8 @@ export default function TestPage() {
                       className="w-full p-2 border rounded-md bg-white"
                       disabled={loading}
                     >
-                      {strands.map(strand => (
-                        <option key={strand} value={strand}>{strand}</option>
+                      {strands.map((strand, index) => (
+                        <option key={`strand-${index}-${strand}`} value={strand}>{strand}</option>
                       ))}
                     </select>
                   </div>
@@ -297,8 +297,8 @@ export default function TestPage() {
                       className="w-full p-2 border rounded-md bg-white"
                       disabled={loading}
                     >
-                      {substrands.map(substrand => (
-                        <option key={substrand} value={substrand}>{substrand}</option>
+                      {substrands.map((substrand, index) => (
+                        <option key={`substrand-${index}-${substrand}`} value={substrand}>{substrand}</option>
                       ))}
                     </select>
                   </div>
@@ -313,8 +313,8 @@ export default function TestPage() {
                       className="w-full p-2 border rounded-md bg-white"
                       disabled={loading}
                     >
-                      {availableYears.map(year => (
-                        <option key={year} value={year}>Year {year}</option>
+                      {availableYears.map((year, index) => (
+                        <option key={`year-${index}-${year}`} value={year}>Year {year}</option>
                       ))}
                     </select>
                   </div>
