@@ -2,10 +2,10 @@
 const curriculumData = require('../../context/national_curriculum_framework.json');
 
 export interface CurriculumEntry {
-  strand: string;
-  substrand: string;
-  contentDomainRef: string;
-  years: {
+  Strand: string;
+  Substrand: string;
+  "Content domain reference": string;
+  Years: {
     [yearKey: string]: string;
   };
 }
@@ -35,7 +35,7 @@ class CurriculumParser {
    * Get all unique strands
    */
   getStrands(): string[] {
-    const strands = [...new Set(this.data.map(item => item.strand))];
+    const strands = [...new Set(this.data.map(item => item.Strand))];
     return strands.sort();
   }
 
@@ -44,8 +44,8 @@ class CurriculumParser {
    */
   getSubstrands(strand: string): string[] {
     const substrands = this.data
-      .filter(item => item.strand === strand)
-      .map(item => item.substrand);
+      .filter(item => item.Strand === strand)
+      .map(item => item.Substrand);
     return [...new Set(substrands)].sort();
   }
 
@@ -54,15 +54,15 @@ class CurriculumParser {
    */
   getAvailableYears(strand: string, substrand: string): number[] {
     const entry = this.data.find(
-      item => item.strand === strand && item.substrand === substrand
+      item => item.Strand === strand && item.Substrand === substrand
     );
     
     if (!entry) return [];
     
     const years: number[] = [];
-    Object.keys(entry.years).forEach(yearKey => {
+    Object.keys(entry.Years).forEach(yearKey => {
       const yearNum = parseInt(yearKey.replace('Year ', ''));
-      if (entry.years[yearKey].trim() !== '') {
+      if (entry.Years[yearKey].trim() !== '') {
         years.push(yearNum);
       }
     });
@@ -75,13 +75,13 @@ class CurriculumParser {
    */
   getCurriculumDescription(strand: string, substrand: string, year: number): CurriculumFilter | null {
     const entry = this.data.find(
-      item => item.strand === strand && item.substrand === substrand
+      item => item.Strand === strand && item.Substrand === substrand
     );
     
     if (!entry) return null;
     
     const yearKey = `Year ${year}`;
-    const description = entry.years[yearKey];
+    const description = entry.Years[yearKey];
     
     if (!description || description.trim() === '') return null;
     
@@ -90,7 +90,7 @@ class CurriculumParser {
       substrand,
       year,
       description: description.trim(),
-      contentDomainRef: entry.contentDomainRef
+      contentDomainRef: entry["Content domain reference"]
     };
   }
 
@@ -109,16 +109,16 @@ class CurriculumParser {
     const term = searchTerm.toLowerCase();
     
     this.data.forEach(entry => {
-      Object.keys(entry.years).forEach(yearKey => {
-        const description = entry.years[yearKey];
+      Object.keys(entry.Years).forEach(yearKey => {
+        const description = entry.Years[yearKey];
         if (description.toLowerCase().includes(term)) {
           const year = parseInt(yearKey.replace('Year ', ''));
           results.push({
-            strand: entry.strand,
-            substrand: entry.substrand,
+            strand: entry.Strand,
+            substrand: entry.Substrand,
             year,
             description: description.trim(),
-            contentDomainRef: entry.contentDomainRef
+            contentDomainRef: entry["Content domain reference"]
           });
         }
       });
@@ -132,8 +132,8 @@ class CurriculumParser {
    */
   getRelatedEntries(strand: string, currentSubstrand?: string): string[] {
     return this.data
-      .filter(item => item.strand === strand && item.substrand !== currentSubstrand)
-      .map(item => item.substrand);
+      .filter(item => item.Strand === strand && item.Substrand !== currentSubstrand)
+      .map(item => item.Substrand);
   }
 }
 
