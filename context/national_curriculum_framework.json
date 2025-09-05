@@ -1,0 +1,730 @@
+[
+  {
+    "Strand": "Number and place value",
+    "Substrand": "counting (in multiples)",
+    "Content domain reference": "N1",
+    "Years": {
+      "Year 1": "count to and across 100, forwards and backwards, beginning with 0 or 1, or from any given number; count in multiples of twos, fives and tens",
+      "Year 2": "count in steps of 2, 3, and 5 from 0, and in tens from any number, forward or backward",
+      "Year 3": "count from 0 in multiples of 4, 8, 50 and 100",
+      "Year 4": "count in multiples of 6, 7, 9, 25 and 1,000",
+      "Year 5": "count forwards or backwards in steps of powers of 10 for any given number up to 1,000,000",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Number and place value",
+    "Substrand": "read, write, order and compare numbers",
+    "Content domain reference": "N2",
+    "Years": {
+      "Year 1": "count, read and write numbers to 100 in numerals; given a number, identify one more and one less; read and write numbers from 1 to 20 in numerals and words",
+      "Year 2": "read and write numbers to at least 100 in numerals and in words; compare and order numbers from 0 up to 100; use <, > and = signs",
+      "Year 3": "compare and order numbers up to 1,000; read and write numbers to 1,000 in numerals and in words; find 10 or 100 more or less than a given number",
+      "Year 4": "order and compare numbers beyond 1,000; find 1,000 more or less than a given number",
+      "Year 5": "read, write, order and compare numbers to at least 1,000,000",
+      "Year 6": "read, write, order and compare numbers up to 10,000,000"
+    }
+  },
+  {
+    "Strand": "Number and place value",
+    "Substrand": "place value; roman numerals",
+    "Content domain reference": "N3",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "recognise the place value of each digit in a two-digit number (tens, ones)",
+      "Year 3": "recognise the place value of each digit in a three-digit number (hundreds, tens, ones)",
+      "Year 4": "recognise the place value of each digit in a four-digit number (thousands, hundreds, tens and ones); read Roman numerals to 100 (I to C) and know that over time, the numeral system changed to include the concept of zero and place value",
+      "Year 5": "determine the value of each digit in numbers up to 1,000,000; read Roman numerals to 1,000 (M) and recognise years written in Roman numerals",
+      "Year 6": "determine the value of each digit in numbers up to 10,000,000"
+    }
+  },
+  {
+    "Strand": "Number and place value",
+    "Substrand": "identify, represent and estimate; rounding",
+    "Content domain reference": "N4",
+    "Years": {
+      "Year 1": "identify and represent numbers using objects and pictorial representations including the number line, and use the language of: equal to, more than, less than (fewer), most, least",
+      "Year 2": "identify, represent and estimate numbers using different representations, including the number line",
+      "Year 3": "identify, represent and estimate numbers using different representations",
+      "Year 4": "identify, represent and estimate numbers using different representations; round any number to the nearest 10, 100 or 1,000",
+      "Year 5": "round any number up to 1,000,000 to the nearest 10, 100, 1,000, 10,000 and 100,000",
+      "Year 6": "round any whole number to a required degree of accuracy"
+    }
+  },
+  {
+    "Strand": "Number and place value",
+    "Substrand": "negative numbers",
+    "Content domain reference": "N5",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "count backwards through zero to include negative numbers",
+      "Year 5": "interpret negative numbers in context, count forwards and backwards with positive and negative whole numbers, including through zero",
+      "Year 6": "use negative numbers in context, and calculate intervals across zero"
+    }
+  },
+  {
+    "Strand": "Number and place value",
+    "Substrand": "number problems",
+    "Content domain reference": "N6",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "use place value and number facts to solve problems",
+      "Year 3": "solve number problems and practical problems involving 3N1-3N4",
+      "Year 4": "solve number and practical problems that involve 4N1-4N5 and with increasingly large positive numbers",
+      "Year 5": "solve number problems and practical problems that involve 5N1-5N5",
+      "Year 6": "solve number problems and practical problems that involve 6N2-6N5"
+    }
+  },
+  {
+    "Strand": "Addition, subtraction, multiplication and division (calculations)",
+    "Substrand": "add / subtract mentally",
+    "Content domain reference": "C1",
+    "Years": {
+      "Year 1": "represent and use number bonds and related subtraction facts within 20",
+      "Year 2": "recall and use addition and subtraction facts to 20 fluently, and derive and use related facts up to 100",
+      "Year 3": "add and subtract numbers mentally, including: a three-digit number and ones, a three-digit number and tens, a three-digit number and hundreds",
+      "Year 4": "",
+      "Year 5": "add and subtract numbers mentally with increasingly large numbers",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Addition, subtraction, multiplication and division (calculations)",
+    "Substrand": "add / subtract using written methods",
+    "Content domain reference": "C2",
+    "Years": {
+      "Year 1": "add and subtract one-digit and two-digit numbers to 20, including zero; read, write and interpret mathematical statements involving addition (+), subtraction (–) and equals (=) signs",
+      "Year 2": "add and subtract numbers using concrete objects, pictorial representations, and mentally, including: a two-digit number and ones, a two-digit number and tens, two two-digit numbers, adding three one-digit numbers",
+      "Year 3": "add and subtract numbers with up to three digits, using formal written methods of columnar addition and subtraction",
+      "Year 4": "add and subtract numbers with up to 4 digits using the formal written methods of columnar addition and subtraction where appropriate",
+      "Year 5": "add and subtract whole numbers with more than 4 digits, including using formal written methods (columnar addition and subtraction)",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Addition, subtraction, multiplication and division (calculations)",
+    "Substrand": "estimate, use inverses and check",
+    "Content domain reference": "C3",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "recognise and use the inverse relationship between addition and subtraction and use this to check calculations and missing number problems",
+      "Year 3": "estimate the answer to a calculation and use inverse operations to check answers",
+      "Year 4": "estimate and use inverse operations to check answers to a calculation",
+      "Year 5": "use rounding to check answers to calculations and determine, in the context of a problem, levels of accuracy",
+      "Year 6": "use estimation to check answers to calculations and determine, in the context of a problem, an appropriate degree of accuracy"
+    }
+  },
+  {
+    "Strand": "Addition, subtraction, multiplication and division (calculations)",
+    "Substrand": "add / subtract to solve problems",
+    "Content domain reference": "C4",
+    "Years": {
+      "Year 1": "solve one-step problems that involve addition and subtraction, using concrete objects and pictorial representations, and missing number problems such as 7 = _ – 9",
+      "Year 2": "solve problems with addition and subtraction: using concrete objects and pictorial representations, including those involving numbers, quantities and measures; applying their increasing knowledge of mental and written methods",
+      "Year 3": "solve problems, including missing number problems, using number facts, place value, and more complex addition and subtraction",
+      "Year 4": "solve addition and subtraction two-step problems in contexts, deciding which operations and methods to use and why",
+      "Year 5": "solve addition and subtraction multi-step problems in contexts, deciding which operations and methods to use and why",
+      "Year 6": "solve addition and subtraction multi-step problems in contexts, deciding which operations and methods to use and why"
+    }
+  },
+  {
+    "Strand": "Addition, subtraction, multiplication and division (calculations)",
+    "Substrand": "properties of number (multiples, factors, primes, squares and cubes)",
+    "Content domain reference": "C5",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "identify multiples and factors, including finding all factor pairs of a number and common factors of two numbers; know and use the vocabulary of prime numbers, prime factors and composite (non-prime) numbers; establish whether a number up to 100 is prime and recall prime numbers up to 19; recognise and use square numbers and cube numbers, and the notation for squared (²) and cubed (³)",
+      "Year 6": "identify common factors, common multiples and prime numbers"
+    }
+  },
+  {
+    "Strand": "Addition, subtraction, multiplication and division (calculations)",
+    "Substrand": "multiply / divide mentally",
+    "Content domain reference": "C6",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "recall and use multiplication and division facts for the 2, 5 and 10 multiplication tables, including recognising odd and even numbers",
+      "Year 3": "recall and use multiplication and division facts for the 3, 4 and 8 multiplication tables",
+      "Year 4": "recall multiplication and division facts for multiplication tables up to 12 x 12; use place value, known and derived facts to multiply and divide mentally, including: multiplying by 0 and 1, dividing by 1, multiplying together three numbers; recognise and use factor pairs and commutativity in mental calculations",
+      "Year 5": "multiply and divide numbers mentally drawing upon known facts; multiply and divide whole numbers and those involving decimals by 10, 100 and 1,000",
+      "Year 6": "perform mental calculations, including with mixed operations and large numbers"
+    }
+  },
+  {
+    "Strand": "Addition, subtraction, multiplication and division (calculations)",
+    "Substrand": "multiply / divide using written methods",
+    "Content domain reference": "C7",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "calculate mathematical statements for multiplication and division within the multiplication tables and write them using the multiplication (×), division (÷) and equals (=) signs",
+      "Year 3": "write and calculate mathematical statements for multiplication and division using the multiplication tables that pupils know, including for two-digit numbers times one-digit numbers, using mental and progressing to formal written methods",
+      "Year 4": "multiply two-digit and three-digit numbers by a one-digit number using formal written layout",
+      "Year 5": "multiply numbers up to 4 digits by a one- or two-digit number using a formal written method, including long multiplication for two-digit numbers; divide numbers up to 4 digits by a one-digit number using the formal written method of short division and interpret remainders appropriately for the context",
+      "Year 6": "multiply multi-digit numbers up to 4 digits by a two-digit whole number using the formal written method of long multiplication; divide numbers up to 4 digits by a two-digit whole number using the formal written method of long division, and interpret remainders as whole number remainders, fractions, or by rounding, as appropriate for the context; divide numbers up to 4 digits by a two-digit number using the formal written method of short division where appropriate, interpreting remainders according to the context"
+    }
+  },
+  {
+    "Strand": "Addition, subtraction, multiplication and division (calculations)",
+    "Substrand": "solve problems (commutative, associative, distributive and all four operations)",
+    "Content domain reference": "C8",
+    "Years": {
+      "Year 1": "solve one-step problems involving multiplication and division, by calculating the answer using concrete objects, pictorial representations and arrays with the support of the teacher",
+      "Year 2": "solve problems involving multiplication and division, using materials, arrays, repeated addition, mental methods, and multiplication and division facts, including problems in contexts; show that addition of two numbers can be done in any order (commutative) and subtraction of one number from another cannot; show that multiplication of two numbers can be done in any order (commutative) and division of one number by another cannot",
+      "Year 3": "solve problems, including missing number problems, involving multiplication and division, including integer scaling problems and correspondence problems in which n objects are connected to m objects",
+      "Year 4": "solve problems involving multiplying and adding, including using the distributive law to multiply two-digit numbers by one digit, integer scaling problems and harder correspondence problems such as n objects are connected to m objects",
+      "Year 5": "solve problems involving multiplication and division including using their knowledge of factors and multiples, squares and cubes; solve problems involving addition, subtraction, multiplication and division and a combination of these, including understanding the meaning of the equals sign; solve problems involving multiplication and division including scaling by simple fractions and problems involving simple rates",
+      "Year 6": "solve problems involving addition, subtraction, multiplication and division"
+    }
+  },
+  {
+    "Strand": "Addition, subtraction, multiplication and division (calculations)",
+    "Substrand": "order of operations",
+    "Content domain reference": "C9",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": "use their knowledge of the order of operations to carry out calculations involving the four operations"
+    }
+  },
+  {
+    "Strand": "Fractions, decimals and percentages",
+    "Substrand": "recognise, find, write, name and count fractions",
+    "Content domain reference": "F1",
+    "Years": {
+      "Year 1": "recognise, find and name a half as one of two equal parts of an object, shape or quantity; recognise, find and name a quarter as one of four equal parts of an object, shape or quantity",
+      "Year 2": "recognise, find, name and write fractions ⅓, ¼, ²⁄₄ and ¾ of a length, shape, set of objects or quantity; write simple fractions, for example, ½ of 6 = 3",
+      "Year 3": "count up and down in tenths, recognise that tenths arise from dividing an object into 10 equal parts and in dividing one-digit numbers or quantities by 10; recognise, find and write fractions of a discrete set of objects: unit fractions and non-unit fractions with small denominators; recognise and use fractions as numbers: unit fractions and non-unit fractions with small denominators",
+      "Year 4": "count up and down in hundredths; recognise that hundredths arise when dividing an object by a hundred and dividing tenths by ten",
+      "Year 5": "",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Fractions, decimals and percentages",
+    "Substrand": "equivalent fractions",
+    "Content domain reference": "F2",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "recognise the equivalence of ²⁄₄ and ½",
+      "Year 3": "recognise and show, using diagrams, equivalent fractions with small denominators",
+      "Year 4": "recognise and show, using diagrams, families of common equivalent fractions",
+      "Year 5": "recognise mixed numbers and improper fractions and convert from one form to the other; write mathematical statements >1 as a mixed number [e.g. ⅖ + ⅘ = ⁶⁄₅ = 1⅕]; identify name and write equivalent fractions of a given fraction, represented visually, including tenths and hundredths",
+      "Year 6": "use common factors to simplify fractions; use common multiples to express fractions in the same denomination"
+    }
+  },
+  {
+    "Strand": "Fractions, decimals and percentages",
+    "Substrand": "comparing and ordering fractions",
+    "Content domain reference": "F3",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "compare and order unit fractions and fractions with the same denominators",
+      "Year 4": "",
+      "Year 5": "compare and order fractions whose denominators are all multiples of the same number",
+      "Year 6": "compare and order fractions, including fractions > 1"
+    }
+  },
+  {
+    "Strand": "Fractions, decimals and percentages",
+    "Substrand": "add / subtract fractions",
+    "Content domain reference": "F4",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "add and subtract fractions with the same denominator within one whole [e.g. ⅚ + ⅚ = ⁶⁄₇]",
+      "Year 4": "add and subtract fractions with the same denominator",
+      "Year 5": "add and subtract fractions with the same denominator and denominators that are multiples of the same number",
+      "Year 6": "add and subtract fractions with different denominators and mixed numbers, using the concept of equivalent fractions"
+    }
+  },
+  {
+    "Strand": "Fractions, decimals and percentages",
+    "Substrand": "multiply / divide fractions",
+    "Content domain reference": "F5",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "multiply proper fractions and mixed numbers by whole numbers, supported by materials and diagrams",
+      "Year 6": "multiply simple pairs of proper fractions, writing the answer in its simplest form [e.g. ¼ x ½ = ⅛]; divide proper fractions by whole numbers [e.g. ⅓ ÷ 2 = ⅙]"
+    }
+  },
+  {
+    "Strand": "Fractions, decimals and percentages",
+    "Substrand": "fractions / decimals equivalence",
+    "Content domain reference": "F6",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "recognise and write decimal equivalents to ¼, ½, ¾; recognise and write decimal equivalents of any number of tenths or hundredths",
+      "Year 5": "read and write decimal numbers as fractions [e.g. 0.71 = ⁷¹⁄₁₀₀]; recognise and use thousandths and relate them to tenths, hundredths and decimal equivalents",
+      "Year 6": "associate a fraction with division to calculate decimal fraction equivalents (e.g. 0.375) for a simple fraction [e.g. ⅜]"
+    }
+  },
+  {
+    "Strand": "Fractions, decimals and percentages",
+    "Substrand": "rounding decimals",
+    "Content domain reference": "F7",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "round decimals with one decimal place to the nearest whole number",
+      "Year 5": "round decimals with two decimal places to the nearest whole number and to one decimal place",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Fractions, decimals and percentages",
+    "Substrand": "compare and order decimals",
+    "Content domain reference": "F8",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "compare numbers with the same number of decimal places up to two decimal places",
+      "Year 5": "read, write, order and compare numbers with up to three decimal places",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Fractions, decimals and percentages",
+    "Substrand": "multiply / divide decimals",
+    "Content domain reference": "F9",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "find the effect of dividing a one- or two-digit number by 10 and 100, identifying the value of the digits in the answer as ones, tenths and hundredths",
+      "Year 5": "",
+      "Year 6": "identify the value of each digit to three decimal places and multiply and divide numbers by 10, 100 and 1,000 giving answers up to three decimal places; multiply one-digit numbers with up to two-decimal places by whole numbers; use written division methods in cases where the answer has up to two-decimal places"
+    }
+  },
+  {
+    "Strand": "Fractions, decimals and percentages",
+    "Substrand": "solve problems with fractions and decimals",
+    "Content domain reference": "F10",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "solve problems that involve 3F1-3F4",
+      "Year 4": "solve problems involving increasingly harder fractions to calculate quantities and fractions to divide quantities, including non-unit fractions where the answer is a whole number; solve simple measure and money problems involving fractions and decimals to two decimal places",
+      "Year 5": "solve problems involving numbers up to three decimal places",
+      "Year 6": "solve problems which require answers to be rounded to specified degrees of accuracy"
+    }
+  },
+  {
+    "Strand": "Fractions, decimals and percentages",
+    "Substrand": "fractions / decimal / percentage equivalence",
+    "Content domain reference": "F11",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "recognise the per cent symbol (%) and understand that per cent relates to 'number of parts per hundred'; write percentages as a fraction with denominator hundred, and as a decimal",
+      "Year 6": "recall and use equivalences between simple fractions, decimals and percentages, including in different contexts"
+    }
+  },
+  {
+    "Strand": "Fractions, decimals and percentages",
+    "Substrand": "solve problems with percentages",
+    "Content domain reference": "F12",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "solve problems that require knowing percentage and decimal equivalents of ½, ¼, ⅕, ⅖, ⅘ and those fractions with a denominator of a multiple of 10 or 25",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Ratio and proportion",
+    "Substrand": "relative sizes, similarity",
+    "Content domain reference": "R1",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": "solve problems involving the relative sizes of two quantities, where missing values can be found by using integer multiplication and division facts"
+    }
+  },
+  {
+    "Strand": "Ratio and proportion",
+    "Substrand": "use of percentages for comparison",
+    "Content domain reference": "R2",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": "solve problems involving the calculation of percentages [e.g. of measures such as 15% of 360] and the use of percentages for comparison"
+    }
+  },
+  {
+    "Strand": "Ratio and proportion",
+    "Substrand": "scale factors",
+    "Content domain reference": "R3",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": "solve problem involving similar shapes where the scale factor is known or can be found"
+    }
+  },
+  {
+    "Strand": "Ratio and proportion",
+    "Substrand": "unequal sharing and grouping",
+    "Content domain reference": "R4",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": "solve problems involving unequal sharing and grouping using knowledge of fractions and multiples"
+    }
+  },
+  {
+    "Strand": "Algebra",
+    "Substrand": "missing number problems expressed in algebra",
+    "Content domain reference": "A1",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": "express missing number problems algebraically"
+    }
+  },
+  {
+    "Strand": "Algebra",
+    "Substrand": "simple formulae expressed in words",
+    "Content domain reference": "A2",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": "use simple formulae"
+    }
+  },
+  {
+    "Strand": "Algebra",
+    "Substrand": "generate and describe linear number sequences",
+    "Content domain reference": "A3",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": "generate and describe linear number sequences"
+    }
+  },
+  {
+    "Strand": "Algebra",
+    "Substrand": "number sentences involving two unknowns",
+    "Content domain reference": "A4",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": "find pairs of numbers that satisfy an equation with two unknowns"
+    }
+  },
+  {
+    "Strand": "Algebra",
+    "Substrand": "enumerate all possibilities of combinations of two variables",
+    "Content domain reference": "A5",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": "enumerate possibilities of combinations of two variables"
+    }
+  },
+  {
+    "Strand": "Measurement",
+    "Substrand": "compare, describe and order measures",
+    "Content domain reference": "M1",
+    "Years": {
+      "Year 1": "compare, describe and solve practical problems for: lengths and heights (e.g. long/short, taller/shorter); mass/weight (e.g. heavy/light, heavier than); capacity and volume (e.g. full/empty, more than/less than); time (e.g. quicker, slower)",
+      "Year 2": "compare and order lengths, mass, volume/capacity and record the results using >, < and =",
+      "Year 3": "compare lengths (m/cm/mm); compare mass (kg/g); compare volume/capacity (l/ml)",
+      "Year 4": "compare different measures, including money in pounds and pence",
+      "Year 5": "",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Measurement",
+    "Substrand": "estimate, measure and read scales",
+    "Content domain reference": "M2",
+    "Years": {
+      "Year 1": "measure and begin to record: lengths and heights; mass/weight; capacity and volume; time (hours, minutes, seconds)",
+      "Year 2": "choose and use appropriate standard units to estimate and measure: length/height (m/cm); mass (kg/g); temperature (°C); capacity (litres/ml) to the nearest appropriate unit, using rulers, scales, thermometers and measuring vessels",
+      "Year 3": "measure lengths (m/cm/mm); measure mass (kg/g); measure volume / capacity (l/ml)",
+      "Year 4": "estimate different measures, including money in pounds and pence",
+      "Year 5": "",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Measurement",
+    "Substrand": "money",
+    "Content domain reference": "M3",
+    "Years": {
+      "Year 1": "recognise and know the value of different denominations of coins and notes",
+      "Year 2": "recognise and use symbols for pounds (£) and pence (p); combine amounts to make a particular value; find different combinations of coins that equal the same amounts of money",
+      "Year 3": "Key stage 1 content domain",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Measurement",
+    "Substrand": "telling time, ordering time, duration and units of time",
+    "Content domain reference": "M4",
+    "Years": {
+      "Year 1": "tell the time to the hour and half past the hour and draw the hands on a clock face to show these times; sequence events in chronological order using language (e.g. before, after, next); recognise and use language relating to dates, including days of the week, weeks, months and years",
+      "Year 2": "tell and write the time to five minutes, including quarter past/to the hour and draw the hands on a clock face to show these times; compare and sequence intervals of time; know the number of minutes in an hour and the number of hours in a day",
+      "Year 3": "tell and write the time from an analogue clock; 12-hour clocks; tell and write the time from an analogue clock; 24-hour clocks; tell and write the time from an analogue clock, including using Roman numerals from I to XII; estimate and read time with increasing accuracy to the nearest minute; record and compare time in terms of seconds, minutes and hours; use vocabulary such as o'clock / a.m. / p.m., morning, afternoon, noon and midnight; know the number of seconds in a minute and the number of days in each month, year and leap year; compare durations of events, [e.g. to calculate the time taken by particular events or tasks]",
+      "Year 4": "read, write and convert time between analogue and digital 12-hour clocks; read, write and convert time between analogue and digital 24-hour clocks; solve problems involving converting from hours to minutes; minutes to seconds; years to months; weeks to days",
+      "Year 5": "solve problems involving converting between units of time",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Measurement",
+    "Substrand": "convert between metric units",
+    "Content domain reference": "M5",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "convert between different units of metric measure [e.g. kilometre and metre; centimetre and metre; centimetre and millimetre; gram and kilogram; litre and millilitre]",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Measurement",
+    "Substrand": "convert metric / imperial",
+    "Content domain reference": "M6",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "convert between different units of measurement [e.g. kilometre to metre; hour to minute]",
+      "Year 5": "understand and use approximate equivalences between metric units and common imperial units such as inches, pounds and pints",
+      "Year 6": "use, read, write and convert between standard units, converting measurements of length, mass, volume and time from a smaller unit of measure to a larger unit, and vice versa, using decimal notation of up to three decimal places; convert between miles and kilometres"
+    }
+  },
+  {
+    "Strand": "Measurement",
+    "Substrand": "perimeter, area",
+    "Content domain reference": "M7",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "measure the perimeter of simple 2-D shapes",
+      "Year 4": "measure and calculate the perimeter of a rectilinear figure (including squares) in centimetres and metres; find the area of rectilinear shapes by counting squares",
+      "Year 5": "measure and calculate the perimeter of composite rectilinear shapes in centimetres and metres; calculate and compare the area of rectangles (including squares), and including using standard units, square centimetres (cm²) and square metres (m²) and estimate the area of irregular shapes",
+      "Year 6": "recognise that shapes with the same areas can have different perimeters and vice versa; calculate the area of parallelograms and triangles; recognise when it is possible to use the formulae for the area of shapes"
+    }
+  },
+  {
+    "Strand": "Measurement",
+    "Substrand": "volume",
+    "Content domain reference": "M8",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "estimate volume [e.g. using 1 cm³ blocks to build cuboids (including cubes)] and capacity [e.g. using water]",
+      "Year 6": "calculate, estimate and compare volume of cubes and cuboids using standard units, including centimetre cubed (cm³) and cubic metres (m³), and extending to other units [e.g. mm³ and km³]; recognise when it is possible to use the formulae for the volume of shapes"
+    }
+  },
+  {
+    "Strand": "Measurement",
+    "Substrand": "solve problems (a, money; b, length; c, mass / weight; d, capacity / volume)",
+    "Content domain reference": "M9",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "solve simple problems in a practical context involving addition and subtraction of money of the same unit, including giving change",
+      "Year 3": "add and subtract amounts of money to give change, using both pounds (£) and pence (p) in practical contexts; add and subtract lengths (m/cm/mm); add and subtract mass (kg/g); add and subtract volume / capacity (l/ml)",
+      "Year 4": "calculate different measures, including money in pounds and pence",
+      "Year 5": "use all four operations to solve problems involving measures [money] using decimal notation, including scaling; use all four operations to solve problems involving measure [e.g. length] using decimal notation, including scaling; use all four operations to solve problems involving measure [e.g. mass] using decimal notation, including scaling; use all four operations to solve problems involving measure [e.g. volume] using decimal notation, including scaling",
+      "Year 6": "solve problems involving the calculation and conversion of units of measure, using decimal notation up to three decimal places where appropriate"
+    }
+  },
+  {
+    "Strand": "Geometry – properties of shapes",
+    "Substrand": "recognise and name common shapes",
+    "Content domain reference": "G1",
+    "Years": {
+      "Year 1": "recognise and name common 2-D shapes (e.g. rectangles, squares, circles, triangles); recognise and name common 3-D shapes (e.g. cuboids, cubes, pyramids, spheres)",
+      "Year 2": "compare and sort common 2-D and 3-D shapes and everyday objects",
+      "Year 3": "Within key stage 1 content domain",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Geometry – properties of shapes",
+    "Substrand": "describe properties and classify shapes",
+    "Content domain reference": "G2",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "identify and describe the properties of 2-D shapes, including the number of sides and line symmetry in a vertical line; identify and describe the properties of 3-D shapes, including the number of edges, vertices and faces",
+      "Year 3": "identify horizontal, vertical lines and pairs of perpendicular and parallel lines",
+      "Year 4": "compare and classify geometric shapes, including quadrilaterals and triangles based on their properties and sizes; identify lines of symmetry in 2-D shapes presented in different orientations; complete a simple symmetric figure with respect to a specific line of symmetry",
+      "Year 5": "use the properties of rectangles to deduce related facts and find missing lengths and angles; distinguish between regular and irregular polygons based on reasoning about equal sides and angles",
+      "Year 6": "compare and classify geometric shapes based on their properties and sizes; describe simple 3-D shapes"
+    }
+  },
+  {
+    "Strand": "Geometry – properties of shapes",
+    "Substrand": "draw and make shapes and relate 2-D to 3-D shapes (including nets)",
+    "Content domain reference": "G3",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "identify 2-D shapes on the surface of 3-D shapes (e.g. a circle on a cylinder and a triangle on a pyramid)",
+      "Year 3": "draw 2-D shapes; make 3-D shapes using modelling materials; recognise 3-D shapes in different orientations and describe them",
+      "Year 4": "",
+      "Year 5": "identify 3-D shapes including cubes and other cuboids, from 2-D representations",
+      "Year 6": "draw 2-D shapes using given dimensions and angles; recognise and build simple 3-D shapes, including making nets"
+    }
+  },
+  {
+    "Strand": "Geometry – properties of shapes",
+    "Substrand": "angles – measuring and properties",
+    "Content domain reference": "G4",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "recognise that angles are a property of shape or a description of a turn; identify right angles, recognise that two right angles make a half-turn, three make three quarters of a turn and four a complete turn; identify whether angles are greater than or less than a right angle",
+      "Year 4": "identify acute and obtuse angles and compare and order angles up to two right angles by size",
+      "Year 5": "know angles are measured in degrees: estimate and compare acute, obtuse and reflex angles; identify: angles at a point and one whole turn (total 360°), angles at a point on a straight line and ½ a turn (total 180°), other multiples of 90°; draw given angles and measure them in degrees (°)",
+      "Year 6": "find unknown angles in any triangles, quadrilaterals and regular polygons; recognise angles where they meet at a point, are on a straight line, or are vertically opposite, and find missing angles"
+    }
+  },
+  {
+    "Strand": "Geometry – properties of shapes",
+    "Substrand": "circles",
+    "Content domain reference": "G5",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": "illustrate and name parts of circles, including radius, diameter and circumference and know that the diameter is twice the radius"
+    }
+  },
+  {
+    "Strand": "Geometry - position and direction",
+    "Substrand": "patterns",
+    "Content domain reference": "P1",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "order and arrange combinations of mathematical objects in patterns and sequences",
+      "Year 3": "Within key stage 1 content domain",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Geometry - position and direction",
+    "Substrand": "describe position, direction and movement",
+    "Content domain reference": "P2",
+    "Years": {
+      "Year 1": "describe position, direction and movement, including half, quarter and three-quarter turns",
+      "Year 2": "use mathematical vocabulary to describe position, direction and movement, including movement in a straight line and distinguishing between rotation as a turn and in terms of right angles for quarter, half and three-quarter turns (clockwise and anti-clockwise)",
+      "Year 3": "",
+      "Year 4": "describe movements between positions as translations of a given unit to the left / right and up / down",
+      "Year 5": "identify, describe and represent the position of a shape following a reflection or translation, using the appropriate language, and know that the shape has not changed",
+      "Year 6": "draw and translate simple shapes on the co-ordinate plane, and reflect them in the axes"
+    }
+  },
+  {
+    "Strand": "Geometry - position and direction",
+    "Substrand": "co-ordinates",
+    "Content domain reference": "P3",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "describe positions on a 2-D grid as co-ordinates in the first quadrant; plot specified points and draw sides to complete a given polygon",
+      "Year 5": "",
+      "Year 6": "describe positions on the full co-ordinate grid (all four quadrants)"
+    }
+  },
+  {
+    "Strand": "Statistics",
+    "Substrand": "interpret and represent data",
+    "Content domain reference": "S1",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "interpret and construct simple pictograms, tally charts, block diagrams and simple tables",
+      "Year 3": "interpret and present data using bar charts, pictograms and tables",
+      "Year 4": "interpret and present discrete and continuous data using appropriate graphical methods, including bar charts and time graphs",
+      "Year 5": "complete, read and interpret information in tables, including timetables",
+      "Year 6": "interpret and construct pie charts and line graphs and use these to solve problems"
+    }
+  },
+  {
+    "Strand": "Statistics",
+    "Substrand": "solve problems involving data",
+    "Content domain reference": "S2",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "ask and answer simple questions by counting the number of objects in each category and sorting the categories by quantity; ask and answer questions about totalling and comparing categorical data",
+      "Year 3": "solve one-step and two-step questions [e.g. 'How many more?' and 'How many fewer?'] using information presented in scaled bar charts, pictograms and tables",
+      "Year 4": "solve comparison, sum and difference problems using information presented in bar charts, pictograms, tables and other graphs",
+      "Year 5": "solve comparison, sum and difference problems using information presented in a line graph",
+      "Year 6": ""
+    }
+  },
+  {
+    "Strand": "Statistics",
+    "Substrand": "mean average",
+    "Content domain reference": "S3",
+    "Years": {
+      "Year 1": "",
+      "Year 2": "",
+      "Year 3": "",
+      "Year 4": "",
+      "Year 5": "",
+      "Year 6": "calculate and interpret the mean as an average"
+    }
+  }
+]

@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm install)",
+      "Bash(npm run dev:*)",
+      "Bash(npx @next/codemod@latest:*)",
+      "Bash(npm install:*)",
+      "Bash(npx supabase:*)",
+      "Bash(npm run stop:*)",
+      "Bash(npm run start:*)",
+      "Bash(docker logs:*)",
+      "Bash(psql:*)",
+      "Bash(docker exec:*)",
+      "Bash(npm run reset:*)",
+      "Bash(curl:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run lint:*)",
+      "Bash(node:*)",
+      "Bash(rm:*)",
+      "Bash(cat:*)",
+      "Bash(npm run build:*)",
+      "Bash(mv:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run:*)",
+      "Bash(dos2unix:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker volume:*)",
+      "Bash(grep:*)",
+      "Bash(npx tsx:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(sed:*)",
+      "Bash(timeout 120 npm run build)",
+      "Bash(DISABLE_ESLINT=true npm run build)",
+      "Read(/C:\\Users\\Andyx\\Documents\\projects\\factory_architect2\\context/**)",
+      "Read(/C:\\Users\\Andyx\\Documents\\projects\\factory_architect2\\factory-architect/**)"
+    ],
+    "deny": [],
+    "ask": [],
+    "defaultMode": "acceptEdits"
+  }
+}
