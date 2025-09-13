@@ -131,7 +131,7 @@ export class MultiStepModel implements IMathModel<MultiStepDifficultyParams, Mul
       } catch (error) {
         console.warn(`Error in step ${i + 1} (${operation.model}):`, error);
         // Continue with fallback result
-        const fallbackResult = previousResult || 10;
+        const fallbackResult: number = previousResult || 10;
         steps.push({
           step: i + 1,
           operation: operation.model,

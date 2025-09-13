@@ -61,7 +61,7 @@ export class MoneyContextGenerator {
   }
 
   private static getActionVerb(operation: string): string {
-    const verbs = this.ACTION_VERBS[operation.toLowerCase()] || this.ACTION_VERBS.addition;
+    const verbs = (this.ACTION_VERBS as any)[operation.toLowerCase()] || this.ACTION_VERBS.addition;
     return randomChoice(verbs);
   }
 

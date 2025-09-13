@@ -187,7 +187,7 @@ export class EnhancedDifficultySystem {
       '6.4': { max_value: 15000, operands: 5, carrying: 'always', range: 'large', decimal_places: 3 }
     };
 
-    const config = progressionTable[level.displayName];
+    const config = progressionTable[level.displayName as keyof typeof progressionTable] as any;
     if (!config) throw new Error(`No progression defined for level ${level.displayName}`);
 
     return {
@@ -245,7 +245,7 @@ export class EnhancedDifficultySystem {
       '6.4': { max: 15000, borrowing: 'always', range: 'large', decimal_places: 3 }
     };
 
-    const config = progressionTable[level.displayName];
+    const config = progressionTable[level.displayName as keyof typeof progressionTable] as any;
     if (!config) throw new Error(`No progression defined for level ${level.displayName}`);
 
     return {
@@ -303,7 +303,7 @@ export class EnhancedDifficultySystem {
       '6.4': { multiplicand_max: 1500, multiplier_max: 150, tables: [], range: 'large', decimal_places: 3, operand_count: 3, use_fractions: true }
     };
 
-    const config = progressionTable[level.displayName];
+    const config = progressionTable[level.displayName as keyof typeof progressionTable] as any;
     if (!config) throw new Error(`No progression defined for level ${level.displayName}`);
 
     return {
@@ -358,7 +358,7 @@ export class EnhancedDifficultySystem {
       '6.4': { dividend_max: 15000, divisor_max: 150, remainder: 'always', decimal_places: 3 }
     };
 
-    const config = progressionTable[level.displayName];
+    const config = progressionTable[level.displayName as keyof typeof progressionTable] as any;
     if (!config) throw new Error(`No progression defined for level ${level.displayName}`);
 
     return {
@@ -400,7 +400,7 @@ export class EnhancedDifficultySystem {
       '6.4': { base_max: 750, percentages: [5, 10, 15, 20, 25, 30, 40, 50, 75, 90], operation: 'decrease', complexity: 'complex' }
     };
 
-    const config = progressionTable[level.displayName];
+    const config = progressionTable[level.displayName as keyof typeof progressionTable] as any;
     if (!config) throw new Error(`No progression defined for level ${level.displayName}`);
 
     return {
@@ -447,7 +447,7 @@ export class EnhancedDifficultySystem {
       '6.4': { whole_max: 2000, fractions: 'extended', complexity: 'complex', numerator_types: 'improper' }
     };
 
-    const config = progressionTable[level.displayName];
+    const config = progressionTable[level.displayName as keyof typeof progressionTable] as any;
     if (!config) throw new Error(`No progression defined for level ${level.displayName}`);
 
     // Extended fractions for Year 6

@@ -205,7 +205,7 @@ export class MixedMoneyUnitsModel implements IMathModel<MixedMoneyUnitsDifficult
       formatted_amount1: this.formatMixedAmount(amount1),
       formatted_amount2: this.formatMixedAmount(amount2),
       formatted_difference: this.formatDecimalAmount(Math.abs(decimal1 - decimal2))
-    };
+    } as any;
   }
 
   private addMixedAmounts(amounts: Array<{ pounds: number; pence: number }>): { pounds: number; pence: number; total_decimal: number } {

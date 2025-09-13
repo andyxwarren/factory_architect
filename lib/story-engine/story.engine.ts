@@ -171,12 +171,12 @@ export class StoryEngine {
     // Generic multiplication
     if (context.unit_type === 'currency') {
       const symbol = context.unit_symbol || '£';
-      const operand1 = `${symbol}${output.decimal_formatted?.operands?.[0] || output.operands?.[0]}`;
-      const operand2 = output.decimal_formatted?.operands?.[1] || output.operands?.[1];
+      const operand1 = `${symbol}${(output.decimal_formatted as any)?.multiplicand || (output as any).operands?.[0] || output.multiplicand}`;
+      const operand2 = (output.decimal_formatted as any)?.multiplier || (output as any).operands?.[1] || output.multiplier;
       return `Multiply: ${operand1} × ${operand2}. What is the result?`;
     }
     
-    return `Multiply: ${output.decimal_formatted.operands?.[0]} × ${output.decimal_formatted.operands?.[1]}. What is the result?`;
+    return `Multiply: ${(output.decimal_formatted as any).multiplicand || output.multiplicand} × ${(output.decimal_formatted as any).multiplier || output.multiplier}. What is the result?`;
   }
 
   private generateDivisionQuestion(output: DivisionOutput, context: StoryContext): string {
@@ -199,8 +199,8 @@ export class StoryEngine {
     // Generic division
     if (context.unit_type === 'currency') {
       const symbol = context.unit_symbol || '£';
-      const dividend = `${symbol}${output.decimal_formatted?.operands?.[0] || output.operands?.[0]}`;
-      const divisor = output.decimal_formatted?.operands?.[1] || output.operands?.[1];
+      const dividend = `${symbol}${(output.decimal_formatted as any)?.dividend || (output as any).operands?.[0] || output.dividend}`;
+      const divisor = (output.decimal_formatted as any)?.divisor || (output as any).operands?.[1] || output.divisor;
       const question = `Divide: ${dividend} ÷ ${divisor}. What is the result?`;
       if (output.remainder > 0) {
         return `${question} (Give your answer as a quotient and remainder)`;
@@ -208,7 +208,7 @@ export class StoryEngine {
       return question;
     }
     
-    const question = `Divide: ${output.decimal_formatted.operands?.[0]} ÷ ${output.decimal_formatted.operands?.[1]}. What is the result?`;
+    const question = `Divide: ${(output.decimal_formatted as any).dividend || output.dividend} ÷ ${(output.decimal_formatted as any).divisor || output.divisor}. What is the result?`;
     if (output.remainder > 0) {
       return `${question} (Give your answer as a quotient and remainder)`;
     }
@@ -482,7 +482,7 @@ export class StoryEngine {
     return questionText;
   }
 
-  private generateLinearEquationQuestion(output: LinearEquationOutput, context: StoryContext): string {
+  private generateLinearEquationQuestion(output: any, context: StoryContext): string {
     if (output.problem_type === 'evaluate') {
       return `Using the equation ${output.equation}, what is the value of y when x = ${output.x_values[0]}?`;
     } else if (output.problem_type === 'complete_table') {
@@ -496,7 +496,7 @@ export class StoryEngine {
     return `Work with the linear equation: ${output.equation}`;
   }
 
-  private generateUnitRateQuestion(output: UnitRateOutput, context: StoryContext): string {
+  private generateUnitRateQuestion(output: any, context: StoryContext): string {
     const symbol = context.unit_symbol || '£';
     
     if (output.problem_type === 'find_unit_rate') {
@@ -506,7 +506,7 @@ export class StoryEngine {
     } else if (output.problem_type === 'compare_rates') {
       let question = `Compare these options for buying ${output.item}s:\n`;
       question += `Option A: ${output.base_quantity} for ${symbol}${output.base_rate}\n`;
-      output.comparison_rates.forEach((rate, index) => {
+      output.comparison_rates.forEach((rate: any, index: number) => {
         const letter = String.fromCharCode(66 + index); // B, C, D...
         question += `Option ${letter}: ${rate.quantity} for ${symbol}${rate.rate}\n`;
       });

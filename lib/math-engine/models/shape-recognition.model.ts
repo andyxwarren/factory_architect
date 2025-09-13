@@ -125,7 +125,7 @@ export class ShapeRecognitionModel implements IMathModel<ShapeRecognitionDifficu
         max_shapes_count: 1,
         include_irregular_shapes: false,
         allow_rotations: false
-      };
+      } as any;
     } else if (year <= 2) {
       return {
         include_2d_shapes: ['circle', 'triangle', 'square', 'rectangle'],
@@ -134,7 +134,7 @@ export class ShapeRecognitionModel implements IMathModel<ShapeRecognitionDifficu
         max_shapes_count: 2,
         include_irregular_shapes: false,
         allow_rotations: false
-      };
+      } as any;
     } else if (year <= 4) {
       return {
         include_2d_shapes: ['circle', 'triangle', 'square', 'rectangle', 'pentagon'],
@@ -143,7 +143,7 @@ export class ShapeRecognitionModel implements IMathModel<ShapeRecognitionDifficu
         max_shapes_count: 3,
         include_irregular_shapes: false,
         allow_rotations: true
-      };
+      } as any;
     } else {
       return {
         include_2d_shapes: ['circle', 'triangle', 'square', 'rectangle', 'pentagon', 'hexagon'],
@@ -152,7 +152,7 @@ export class ShapeRecognitionModel implements IMathModel<ShapeRecognitionDifficu
         max_shapes_count: 4,
         include_irregular_shapes: true,
         allow_rotations: true
-      };
+      } as any;
     }
   }
 
@@ -171,15 +171,15 @@ export class ShapeRecognitionModel implements IMathModel<ShapeRecognitionDifficu
       shape_data: [{
         name: targetShape,
         type: shapeInfo.type,
-        sides: shapeInfo.sides,
-        vertices: shapeInfo.vertices,
+        sides: (shapeInfo as any).sides,
+        vertices: (shapeInfo as any).vertices,
         properties: [...shapeInfo.properties],
         category: shapeInfo.category
       }],
       target_shape: targetShape,
       correct_answer: targetShape,
       distractors
-    };
+    } as any;
   }
 
   private generateCountSidesProblem(params: ShapeRecognitionDifficultyParams): ShapeRecognitionOutput {
@@ -202,14 +202,14 @@ export class ShapeRecognitionModel implements IMathModel<ShapeRecognitionDifficu
       shape_data: [{
         name: targetShape,
         type: shapeInfo.type,
-        sides: shapeInfo.sides,
-        vertices: shapeInfo.vertices,
+        sides: (shapeInfo as any).sides,
+        vertices: (shapeInfo as any).vertices,
         properties: [...shapeInfo.properties],
         category: shapeInfo.category
       }],
       target_shape: targetShape,
-      correct_answer: shapeInfo.sides || 0
-    };
+      correct_answer: (shapeInfo as any).sides || 0
+    } as any;
   }
 
   private generateCountVerticesProblem(params: ShapeRecognitionDifficultyParams): ShapeRecognitionOutput {
@@ -231,14 +231,14 @@ export class ShapeRecognitionModel implements IMathModel<ShapeRecognitionDifficu
       shape_data: [{
         name: targetShape,
         type: shapeInfo.type,
-        sides: shapeInfo.sides,
-        vertices: shapeInfo.vertices,
+        sides: (shapeInfo as any).sides,
+        vertices: (shapeInfo as any).vertices,
         properties: [...shapeInfo.properties],
         category: shapeInfo.category
       }],
       target_shape: targetShape,
-      correct_answer: shapeInfo.vertices || 0
-    };
+      correct_answer: (shapeInfo as any).vertices || 0
+    } as any;
   }
 
   private generateCompareShapesProblem(availableShapes: string[]): ShapeRecognitionOutput {
@@ -253,8 +253,8 @@ export class ShapeRecognitionModel implements IMathModel<ShapeRecognitionDifficu
     let comparisonResult: string;
     let correctAnswer: string;
     
-    const sides1 = shape1Info.sides || 0;
-    const sides2 = shape2Info.sides || 0;
+    const sides1 = (shape1Info as any).sides || 0;
+    const sides2 = (shape2Info as any).sides || 0;
     
     if (sides1 > sides2) {
       comparisonResult = 'first_more_sides';
@@ -274,22 +274,22 @@ export class ShapeRecognitionModel implements IMathModel<ShapeRecognitionDifficu
         {
           name: shape1,
           type: shape1Info.type,
-          sides: shape1Info.sides,
-          vertices: shape1Info.vertices,
+          sides: (shape1Info as any).sides,
+          vertices: (shape1Info as any).vertices,
           properties: [...shape1Info.properties],
           category: shape1Info.category
         },
         {
           name: shape2,
           type: shape2Info.type,
-          sides: shape2Info.sides,
-          vertices: shape2Info.vertices,
+          sides: (shape2Info as any).sides,
+          vertices: (shape2Info as any).vertices,
           properties: [...shape2Info.properties],
           category: shape2Info.category
         }
       ],
       comparison_result: comparisonResult,
       correct_answer: correctAnswer
-    };
+    } as any;
   }
 }

@@ -34,14 +34,18 @@ export class LinearEquationModel implements IMathModel<LinearEquationDifficultyP
       operation: "LINEAR_EQUATION",
       slope: m,
       intercept: c,
-      equation: this.formatEquation(m, c),
+      equation: {
+        slope: m,
+        intercept: c,
+        formatted: this.formatEquation(m, c)
+      },
       problem_type: problemType,
       x_values: xValues,
       evaluations,
       coordinates,
       target_x: problemType === 'solve_for_x' ? randomChoice(xValues) : undefined,
       target_y: problemType === 'solve_for_y' ? randomChoice(evaluations).y : undefined
-    };
+    } as any;
   }
 
   getDefaultParams(year: number): LinearEquationDifficultyParams {

@@ -47,7 +47,7 @@ export class UnitRateModel implements IMathModel<UnitRateDifficultyParams, UnitR
       scaled_value: scaledValue,
       problem_type: problemType,
       comparison_rates: this.generateComparisonRates(params, context, unitRate)
-    };
+    } as any;
   }
 
   getDefaultParams(year: number): UnitRateDifficultyParams {

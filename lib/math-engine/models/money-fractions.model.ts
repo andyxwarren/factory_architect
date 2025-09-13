@@ -162,7 +162,7 @@ export class MoneyFractionsModel implements IMathModel<MoneyFractionsDifficultyP
       formatted_fraction2: this.formatFraction(fraction2),
       formatted_amount1: this.formatMoneyAmount(amount1),
       formatted_amount2: this.formatMoneyAmount(amount2)
-    };
+    } as any;
   }
 
   private generateAddFractionalMoneyProblem(params: MoneyFractionsDifficultyParams): MoneyFractionsOutput {

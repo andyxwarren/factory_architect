@@ -133,7 +133,7 @@ export class ShapePropertiesModel implements IMathModel<ShapePropertiesDifficult
         include_angle_types: false,
         include_symmetry: false,
         problem_complexity: 'simple'
-      };
+      } as any;
     } else if (year <= 4) {
       return {
         shape_types: ['triangle', 'square', 'rectangle', 'pentagon', 'hexagon'],
@@ -142,7 +142,7 @@ export class ShapePropertiesModel implements IMathModel<ShapePropertiesDifficult
         include_angle_types: true,
         include_symmetry: false,
         problem_complexity: 'medium'
-      };
+      } as any;
     } else {
       return {
         shape_types: ['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'rhombus', 'parallelogram'],
@@ -151,7 +151,7 @@ export class ShapePropertiesModel implements IMathModel<ShapePropertiesDifficult
         include_angle_types: true,
         include_symmetry: true,
         problem_complexity: 'complex'
-      };
+      } as any;
     }
   }
 
@@ -201,7 +201,7 @@ export class ShapePropertiesModel implements IMathModel<ShapePropertiesDifficult
       question_focus: propertyFocus,
       correct_answer: correctAnswer,
       explanation: `A ${shapeName} has ${correctAnswer} ${ShapePropertiesModel.PROPERTY_DESCRIPTIONS[propertyFocus as keyof typeof ShapePropertiesModel.PROPERTY_DESCRIPTIONS] || propertyFocus}.`
-    };
+    } as any;
   }
 
   private generateIdentifyPropertyProblem(
@@ -245,7 +245,7 @@ export class ShapePropertiesModel implements IMathModel<ShapePropertiesDifficult
       question_focus: propertyFocus,
       correct_answer: correctAnswer,
       explanation
-    };
+    } as any;
   }
 
   private generateComparePropertiesProblem(
@@ -296,7 +296,7 @@ export class ShapePropertiesModel implements IMathModel<ShapePropertiesDifficult
       question_focus: propertyFocus,
       correct_answer: correctAnswer,
       explanation
-    };
+    } as any;
   }
 
   private generateClassifyShapesProblem(params: ShapePropertiesDifficultyParams): ShapePropertiesOutput {
@@ -337,6 +337,6 @@ export class ShapePropertiesModel implements IMathModel<ShapePropertiesDifficult
       question_focus: propertyFocus,
       correct_answer: correctAnswer,
       explanation: `Shapes with the specified property: ${correctAnswer}`
-    };
+    } as any;
   }
 }

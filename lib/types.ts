@@ -123,11 +123,14 @@ export interface MultiStepOutput {
 
 // LINEAR_EQUATION Model
 export interface LinearEquationDifficultyParams {
-  slope_max: number;            // Maximum value for slope (m)
-  intercept_max: number;        // Maximum value for y-intercept (c)
-  input_max: number;            // Maximum input value (x)
-  decimal_places: number;       // Decimal places in coefficients
-  allow_negative_slope: boolean; // Allow negative slopes
+  slope_range: { min: number; max: number };
+  intercept_range: { min: number; max: number };
+  x_range: { min: number; max: number };
+  decimal_places: number;
+  allow_negative_slope: boolean;
+  allow_negative_intercept: boolean;
+  problem_types: string[];
+  x_value_count: number;
 }
 
 export interface LinearEquationOutput {
@@ -164,10 +167,15 @@ export interface PercentageOutput {
 
 // UNIT_RATE Model
 export interface UnitRateDifficultyParams {
-  total_value_max: number;      // Maximum total value
-  quantity_max: number;         // Maximum quantity
-  decimal_places: number;       // Decimal places
-  comparison_count: number;     // Number of rates to compare (1-4)
+  base_quantity_range: { min: number; max: number };
+  base_rate_range: { min: number; max: number };
+  target_quantity_range: { min: number; max: number };
+  decimal_places: number;
+  allow_complex_rates: boolean;
+  problem_types: string[];
+  include_comparisons: boolean;
+  comparison_count: number;
+  unit_contexts?: string[];
 }
 
 export interface UnitRateCalculation {
@@ -326,7 +334,10 @@ export interface GeneratedQuestion {
   metadata: {
     model_id: string;
     year_level: number;
+    sub_level?: string;
     difficulty_params: any;
+    enhanced_system_used?: boolean;
+    session_id?: string;
     timestamp: Date;
   };
 }
