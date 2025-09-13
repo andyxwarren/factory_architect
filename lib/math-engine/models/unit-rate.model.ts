@@ -106,6 +106,22 @@ export class UnitRateModel implements IMathModel<UnitRateDifficultyParams, UnitR
   private generateTargetQuantity(params: UnitRateDifficultyParams, baseQuantity: number): number {
     let targetQuantity: number;
     let attempts = 0;
+    const maxAttempts = 100;
+    
+    // Calculate available options excluding base quantity
+    const availableValues: number[] = [];
+    for (let i = params.target_quantity_range.min; i <= params.target_quantity_range.max; i++) {
+      if (i !== baseQuantity) {
+        availableValues.push(i);
+      }
+    }
+    
+    // If no alternatives available, return a safe fallback
+    if (availableValues.length === 0) {
+      return baseQuantity + 1 <= params.target_quantity_range.max ? 
+        baseQuantity + 1 : 
+        Math.max(params.target_quantity_range.min, baseQuantity - 1);
+    }
     
     do {
       targetQuantity = generateRandomNumber(
@@ -116,14 +132,11 @@ export class UnitRateModel implements IMathModel<UnitRateDifficultyParams, UnitR
       attempts++;
       
       // Safety valve to prevent infinite loops
-      if (attempts > 100) {
-        targetQuantity = baseQuantity + 1; // Safe fallback
-        if (targetQuantity > params.target_quantity_range.max) {
-          targetQuantity = Math.max(params.target_quantity_range.min, baseQuantity - 1);
-        }
+      if (attempts > maxAttempts) {
+        targetQuantity = randomChoice(availableValues);
         break;
       }
-    } while (targetQuantity === baseQuantity); // Ensure different from base
+    } while (targetQuantity === baseQuantity);
 
     return targetQuantity;
   }
@@ -162,9 +175,23 @@ export class UnitRateModel implements IMathModel<UnitRateDifficultyParams, UnitR
       
       // Generate a rate that creates either better or worse unit rate
       const isBetter = Math.random() > 0.5;
-      const rateMultiplier = isBetter ? 
-        generateRandomNumber(0.95, 2, 0.7) : // Better unit rate (lower cost or higher value)
-        generateRandomNumber(1.4, 2, 1.05);  // Worse unit rate
+      
+      // Create multiplier for better/worse rates using proper random float generation
+      let rateMultiplier: number;
+      if (isBetter) {
+        // For better rates: 0.7 to 0.95 (5% to 30% better)
+        const min = 0.7;
+        const max = 0.95;
+        rateMultiplier = Math.random() * (max - min) + min;
+      } else {
+        // For worse rates: 1.05 to 1.4 (5% to 40% worse)
+        const min = 1.05;
+        const max = 1.4;
+        rateMultiplier = Math.random() * (max - min) + min;
+      }
+      
+      // Round to appropriate decimal places
+      rateMultiplier = Math.round(rateMultiplier * 100) / 100;
 
       const rate = Math.round(baseUnitRate * quantity * rateMultiplier * Math.pow(10, params.decimal_places)) / Math.pow(10, params.decimal_places);
       const unitRate = this.calculateUnitRate(rate, quantity, params);

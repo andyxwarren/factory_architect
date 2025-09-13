@@ -5,10 +5,14 @@ import { GeneratedQuestion } from '@/lib/types';
 import { MODEL_STATUS_REGISTRY, ModelStatus, getCompletionStats } from '@/lib/models/model-status';
 import { curriculumParser, CurriculumFilter } from '@/lib/curriculum/curriculum-parser';
 import { curriculumModelMapper } from '@/lib/curriculum/curriculum-model-mapping';
+import { EnhancedDifficultySystem } from '@/lib/math-engine/difficulty-enhanced';
+import { SubDifficultyLevel } from '@/lib/types-enhanced';
 
 type FilterMode = 'model' | 'curriculum';
 
 const YEARS = [1, 2, 3, 4, 5, 6];
+const SUB_LEVELS = [1, 2, 3, 4];
+const ENHANCED_MODELS = ['ADDITION', 'SUBTRACTION', 'MULTIPLICATION', 'DIVISION', 'PERCENTAGE', 'FRACTION'];
 
 export default function TestPage() {
   // Filter mode state
@@ -17,11 +21,17 @@ export default function TestPage() {
   // Model-first filtering
   const [selectedModel, setSelectedModel] = useState('ADDITION');
   const [selectedYear, setSelectedYear] = useState(4);
+  const [selectedSubLevel, setSelectedSubLevel] = useState(3);
+  const [useEnhancedDifficulty, setUseEnhancedDifficulty] = useState(true);
+  const [sessionId] = useState(() => `session_${Date.now()}`);
+  const [adaptiveMode, setAdaptiveMode] = useState(false);
+  const [confidenceMode, setConfidenceMode] = useState(false);
   
   // Curriculum-first filtering
   const [selectedStrand, setSelectedStrand] = useState('');
   const [selectedSubstrand, setSelectedSubstrand] = useState('');
   const [selectedCurriculumYear, setSelectedCurriculumYear] = useState(1);
+  const [selectedCurriculumSubLevel, setSelectedCurriculumSubLevel] = useState(3);
   const [curriculumFilter, setCurriculumFilter] = useState<CurriculumFilter | null>(null);
   const [suggestedModels, setSuggestedModels] = useState<string[]>([]);
   
@@ -85,9 +95,10 @@ export default function TestPage() {
     }
   }, [selectedStrand, selectedSubstrand, selectedCurriculumYear]);
 
-  const generateQuestion = async (modelId?: string, yearLevel?: number) => {
+  const generateQuestion = async (modelId?: string, yearLevel?: number, subLevel?: number) => {
     const model = modelId || (filterMode === 'model' ? selectedModel : suggestedModels[0]);
     const year = yearLevel || (filterMode === 'model' ? selectedYear : selectedCurriculumYear);
+    const subLvl = subLevel || (filterMode === 'model' ? selectedSubLevel : selectedCurriculumSubLevel);
     
     if (!model) {
       setError('No model selected or available');
@@ -99,16 +110,27 @@ export default function TestPage() {
     setShowAnswer(false);
 
     try {
+      const requestBody: any = {
+        model_id: model,
+        context_type: 'money'
+      };
+
+      // Use enhanced difficulty system if available and enabled
+      if (useEnhancedDifficulty && ENHANCED_MODELS.includes(model)) {
+        requestBody.sub_level = `${year}.${subLvl}`;
+        requestBody.session_id = sessionId;
+        requestBody.adaptive_mode = adaptiveMode;
+        requestBody.confidence_mode = confidenceMode;
+      } else {
+        requestBody.year_level = year;
+      }
+
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model_id: model,
-          year_level: year,
-          context_type: 'money'
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -256,6 +278,93 @@ export default function TestPage() {
                     </select>
                   </div>
 
+                  {/* Enhanced Difficulty Toggle */}
+                  <div>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={useEnhancedDifficulty && ENHANCED_MODELS.includes(selectedModel)}
+                        onChange={(e) => setUseEnhancedDifficulty(e.target.checked)}
+                        disabled={!ENHANCED_MODELS.includes(selectedModel) || loading}
+                        className="rounded border-gray-300"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        Use Enhanced Difficulty System
+                        {ENHANCED_MODELS.includes(selectedModel) ? (
+                          <span className="ml-1 text-green-600">✓ Available</span>
+                        ) : (
+                          <span className="ml-1 text-gray-400">(Not available for this model)</span>
+                        )}
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Sub-Level Selection */}
+                  {useEnhancedDifficulty && ENHANCED_MODELS.includes(selectedModel) && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Sub-Level (Fine-Grained Difficulty)
+                      </label>
+                      <select
+                        value={selectedSubLevel}
+                        onChange={(e) => setSelectedSubLevel(parseInt(e.target.value))}
+                        className="w-full p-2 border rounded-md bg-white"
+                        disabled={loading}
+                      >
+                        {SUB_LEVELS.map(subLevel => (
+                          <option key={subLevel} value={subLevel}>
+                            {selectedYear}.{subLevel} - {
+                              subLevel === 1 ? 'Introductory' :
+                              subLevel === 2 ? 'Developing' :
+                              subLevel === 3 ? 'Standard' :
+                              'Advanced'
+                            }
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Current level: {selectedYear}.{selectedSubLevel} - Maximum 50% difficulty increases between levels
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Adaptive Mode Controls */}
+                  {useEnhancedDifficulty && ENHANCED_MODELS.includes(selectedModel) && (
+                    <div className="space-y-2 p-3 bg-blue-50 rounded-md">
+                      <h4 className="text-sm font-medium text-blue-900">Adaptive Learning Options</h4>
+                      
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={adaptiveMode}
+                          onChange={(e) => setAdaptiveMode(e.target.checked)}
+                          disabled={loading}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm text-blue-800">
+                          Adaptive Mode - Auto-adjust difficulty based on performance
+                        </span>
+                      </label>
+
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={confidenceMode}
+                          onChange={(e) => setConfidenceMode(e.target.checked)}
+                          disabled={loading}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm text-blue-800">
+                          Confidence Mode - Lock difficulty until 80% accuracy achieved
+                        </span>
+                      </label>
+
+                      <p className="text-xs text-blue-600">
+                        Session ID: {sessionId.slice(-8)}...
+                      </p>
+                    </div>
+                  )}
+
                   {MODEL_STATUS_REGISTRY[selectedModel] && (
                     <div className="mt-4 p-3 bg-gray-50 rounded-md text-sm">
                       <p className="font-medium">{MODEL_STATUS_REGISTRY[selectedModel].name}</p>
@@ -319,6 +428,29 @@ export default function TestPage() {
                     </select>
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sub-Level (if supported)
+                    </label>
+                    <select
+                      value={selectedCurriculumSubLevel}
+                      onChange={(e) => setSelectedCurriculumSubLevel(parseInt(e.target.value))}
+                      className="w-full p-2 border rounded-md bg-white"
+                      disabled={loading}
+                    >
+                      {SUB_LEVELS.map(subLevel => (
+                        <option key={subLevel} value={subLevel}>
+                          {selectedCurriculumYear}.{subLevel} - {
+                            subLevel === 1 ? 'Introductory' :
+                            subLevel === 2 ? 'Developing' :
+                            subLevel === 3 ? 'Standard' :
+                            'Advanced'
+                          }
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   {curriculumFilter && (
                     <div className="mt-4 p-3 bg-blue-50 rounded-md text-sm">
                       <p className="font-medium text-blue-900">UK Curriculum Requirement</p>
@@ -336,7 +468,7 @@ export default function TestPage() {
                         {suggestedModels.map(modelId => (
                           <button
                             key={modelId}
-                            onClick={() => generateQuestion(modelId, selectedCurriculumYear)}
+                            onClick={() => generateQuestion(modelId, selectedCurriculumYear, selectedCurriculumSubLevel)}
                             disabled={loading || isModelDisabled(modelId)}
                             className={`px-2 py-1 text-xs rounded-md border flex items-center gap-1 ${
                               isModelDisabled(modelId)
@@ -346,6 +478,9 @@ export default function TestPage() {
                           >
                             {getModelDisplayName(modelId)}
                             {getModelStatusBadge(modelId)}
+                            {ENHANCED_MODELS.includes(modelId) && (
+                              <span className="text-green-600 text-xs">✨</span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -391,7 +526,20 @@ export default function TestPage() {
                     </button>
                     
                     <div className="text-sm text-gray-500">
-                      Model: {generatedQuestion.metadata.model_id} | Year: {generatedQuestion.metadata.year_level}
+                      Model: {generatedQuestion.metadata.model_id} | 
+                      {generatedQuestion.metadata.sub_level ? (
+                        <>
+                          <span className="text-green-600 font-medium"> Level: {generatedQuestion.metadata.sub_level}</span>
+                          {generatedQuestion.metadata.enhanced_system_used && (
+                            <span className="ml-1 text-green-600">✨ Enhanced</span>
+                          )}
+                        </>
+                      ) : (
+                        <span> Year: {generatedQuestion.metadata.year_level}</span>
+                      )}
+                      {generatedQuestion.metadata.session_id && (
+                        <span className="ml-2 text-blue-600">Session: {generatedQuestion.metadata.session_id.slice(-6)}</span>
+                      )}
                     </div>
                   </div>
 
@@ -437,7 +585,15 @@ export default function TestPage() {
                     <div key={index} className="p-3 bg-gray-50 rounded-md">
                       <p className="text-sm">{q.question}</p>
                       <div className="mt-1 text-xs text-gray-500">
-                        {q.metadata.model_id} | Year {q.metadata.year_level}
+                        {q.metadata.model_id} | 
+                        {q.metadata.sub_level ? (
+                          <span className="text-green-600 font-medium">Level {q.metadata.sub_level}</span>
+                        ) : (
+                          <span>Year {q.metadata.year_level}</span>
+                        )}
+                        {q.metadata.enhanced_system_used && (
+                          <span className="ml-1 text-green-600">✨</span>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
                      'FRACTION', 'COUNTING', 'TIME_RATE', 'CONVERSION', 'COMPARISON',
                      'MULTI_STEP', 'LINEAR_EQUATION', 'UNIT_RATE',
                      'COIN_RECOGNITION', 'CHANGE_CALCULATION', 'MONEY_COMBINATIONS',
-                     'MIXED_MONEY_UNITS', 'MONEY_FRACTIONS', 'MONEY_SCALING'];
+                     'MIXED_MONEY_UNITS', 'MONEY_FRACTIONS', 'MONEY_SCALING',
+                     'SHAPE_RECOGNITION'];
     if (!modelIds.includes(model_id)) {
       return NextResponse.json(
         { error: `Invalid model_id: ${model_id}` },

@@ -17,6 +17,7 @@ import { MoneyCombinationsModel } from './models/money-combinations.model';
 import { MixedMoneyUnitsModel } from './models/mixed-money-units.model';
 import { MoneyFractionsModel } from './models/money-fractions.model';
 import { MoneyScalingModel } from './models/money-scaling.model';
+import { ShapeRecognitionModel } from './models/shape-recognition.model';
 import { DifficultyPresets } from './difficulty';
 
 // Model Registry
@@ -39,7 +40,8 @@ export const mathModels = {
   MONEY_COMBINATIONS: new MoneyCombinationsModel(),
   MIXED_MONEY_UNITS: new MixedMoneyUnitsModel(),
   MONEY_FRACTIONS: new MoneyFractionsModel(),
-  MONEY_SCALING: new MoneyScalingModel()
+  MONEY_SCALING: new MoneyScalingModel(),
+  SHAPE_RECOGNITION: new ShapeRecognitionModel()
 };
 
 export type ModelId = keyof typeof mathModels;

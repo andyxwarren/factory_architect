@@ -62,6 +62,31 @@ export class StoryEngine {
       return this.generateUnitRateQuestion(mathOutput as UnitRateOutput, context);
     }
     
+    // Money-specific models
+    if (mathOutput.operation === 'COIN_RECOGNITION') {
+      return this.generateCoinRecognitionQuestion(mathOutput, context);
+    }
+    if (mathOutput.operation === 'CHANGE_CALCULATION') {
+      return this.generateChangeCalculationQuestion(mathOutput, context);
+    }
+    if (mathOutput.operation === 'MONEY_COMBINATIONS') {
+      return this.generateMoneyCombinationsQuestion(mathOutput, context);
+    }
+    if (mathOutput.operation === 'MIXED_MONEY_UNITS') {
+      return this.generateMixedMoneyUnitsQuestion(mathOutput, context);
+    }
+    if (mathOutput.operation === 'MONEY_FRACTIONS') {
+      return this.generateMoneyFractionsQuestion(mathOutput, context);
+    }
+    if (mathOutput.operation === 'MONEY_SCALING') {
+      return this.generateMoneyScalingQuestion(mathOutput, context);
+    }
+    
+    // Geometry models
+    if (mathOutput.operation === 'SHAPE_RECOGNITION') {
+      return this.generateShapeRecognitionQuestion(mathOutput, context);
+    }
+    
     return "Question generation not yet implemented for this model.";
   }
 
@@ -80,8 +105,14 @@ export class StoryEngine {
     }
     
     // Generic addition
+    if (context.unit_type === 'currency') {
+      const symbol = context.unit_symbol || '£';
+      const values = output.operands.map(value => `${symbol}${output.decimal_formatted?.operands?.[output.operands.indexOf(value)] || value}`).join(', ');
+      return `Add together: ${values}. What is the total?`;
+    }
+    
     const values = output.decimal_formatted.operands?.join(', ') || output.operands.join(', ');
-    return `Calculate: ${values}. What is the total?`;
+    return `Add together: ${values}. What is the total?`;
   }
 
   private generateSubtractionQuestion(output: SubtractionOutput, context: StoryContext): string {
@@ -102,7 +133,14 @@ export class StoryEngine {
     }
     
     // Generic subtraction
-    return `What is ${output.decimal_formatted.minuend} minus ${output.decimal_formatted.subtrahend}?`;
+    if (context.unit_type === 'currency') {
+      const symbol = context.unit_symbol || '£';
+      const minuend = `${symbol}${output.decimal_formatted?.minuend || output.minuend}`;
+      const subtrahend = `${symbol}${output.decimal_formatted?.subtrahend || output.subtrahend}`;
+      return `Subtract: ${minuend} minus ${subtrahend}. What is the difference?`;
+    }
+    
+    return `Subtract: ${output.decimal_formatted.minuend} minus ${output.decimal_formatted.subtrahend}. What is the difference?`;
   }
 
   private generateMultiplicationQuestion(output: MultiplicationOutput, context: StoryContext): string {
@@ -119,7 +157,14 @@ export class StoryEngine {
     }
     
     // Generic multiplication
-    return `What is ${output.decimal_formatted.operands?.[0]} × ${output.decimal_formatted.operands?.[1]}?`;
+    if (context.unit_type === 'currency') {
+      const symbol = context.unit_symbol || '£';
+      const operand1 = `${symbol}${output.decimal_formatted?.operands?.[0] || output.operands?.[0]}`;
+      const operand2 = output.decimal_formatted?.operands?.[1] || output.operands?.[1];
+      return `Multiply: ${operand1} × ${operand2}. What is the result?`;
+    }
+    
+    return `Multiply: ${output.decimal_formatted.operands?.[0]} × ${output.decimal_formatted.operands?.[1]}. What is the result?`;
   }
 
   private generateDivisionQuestion(output: DivisionOutput, context: StoryContext): string {
@@ -140,7 +185,18 @@ export class StoryEngine {
     }
     
     // Generic division
-    const question = `What is ${output.decimal_formatted.operands?.[0]} ÷ ${output.decimal_formatted.operands?.[1]}?`;
+    if (context.unit_type === 'currency') {
+      const symbol = context.unit_symbol || '£';
+      const dividend = `${symbol}${output.decimal_formatted?.operands?.[0] || output.operands?.[0]}`;
+      const divisor = output.decimal_formatted?.operands?.[1] || output.operands?.[1];
+      const question = `Divide: ${dividend} ÷ ${divisor}. What is the result?`;
+      if (output.remainder > 0) {
+        return `${question} (Give your answer as a quotient and remainder)`;
+      }
+      return question;
+    }
+    
+    const question = `Divide: ${output.decimal_formatted.operands?.[0]} ÷ ${output.decimal_formatted.operands?.[1]}. What is the result?`;
     if (output.remainder > 0) {
       return `${question} (Give your answer as a quotient and remainder)`;
     }
@@ -331,6 +387,30 @@ export class StoryEngine {
           return better ? `Option with ${better.quantity} ${mathOutput.item}s is better` : 'Base option is better';
         }
         value = mathOutput.scaled_value;
+      } else if (mathOutput.operation === 'COIN_RECOGNITION') {
+        if (mathOutput.problem_type === 'identify_value') {
+          return mathOutput.formatted_value || this.getCoinName(mathOutput.target_denomination);
+        } else if (mathOutput.problem_type === 'identify_name') {
+          return mathOutput.denomination_name;
+        } else if (mathOutput.problem_type === 'compare_values') {
+          return mathOutput.comparison_result === 'first_greater' ? 'First collection' : 
+                 mathOutput.comparison_result === 'second_greater' ? 'Second collection' : 'Equal value';
+        }
+        return `${mathOutput.total_value}p`;
+      } else if (mathOutput.operation === 'CHANGE_CALCULATION') {
+        return this.formatCurrency(mathOutput.change_amount);
+      } else if (mathOutput.operation === 'MONEY_COMBINATIONS') {
+        const combination = mathOutput.combinations[0];
+        const coins = combination.map((coin: any) => `${coin.count} × ${coin.formatted}`).join(', ');
+        return `${coins} (one possible way)`;
+      } else if (mathOutput.operation === 'MIXED_MONEY_UNITS') {
+        return mathOutput.formatted_result;
+      } else if (mathOutput.operation === 'MONEY_FRACTIONS') {
+        return this.formatCurrency(mathOutput.result_amount);
+      } else if (mathOutput.operation === 'MONEY_SCALING') {
+        return this.formatCurrency(mathOutput.scaled_cost);
+      } else if (mathOutput.operation === 'SHAPE_RECOGNITION') {
+        return String(mathOutput.correct_answer);
       } else {
         value = mathOutput.result || mathOutput.final_result || 0;
       }
@@ -417,5 +497,173 @@ export class StoryEngine {
     }
     
     return `Calculate the rate for ${output.item}s at ${symbol}${output.unit_rate} per ${output.item}.`;
+  }
+
+  // Money-specific question generators
+  private generateCoinRecognitionQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Tom';
+    
+    switch (output.problem_type) {
+      case 'identify_value':
+        return `${person} has a ${this.getCoinName(output.target_denomination)} coin. What is the value of this coin?`;
+      
+      case 'compare_values':
+        const coins = output.collection.map((coin: any) => `${coin.count} × ${this.getCoinName(coin.denomination)}`).join(' and ');
+        return `${person} has ${coins}. Which coin or collection has greater value?`;
+      
+      case 'total_value':
+        const coinList = output.collection.map((coin: any) => `${coin.count} × ${this.getCoinName(coin.denomination)}`).join(', ');
+        return `${person} has ${coinList}. What is the total value?`;
+      
+      default:
+        return `${person} needs to identify the value of the coins.`;
+    }
+  }
+
+  private generateChangeCalculationQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Sarah';
+    
+    if (output.problem_type === 'single_item') {
+      const item = output.items[0];
+      return `${person} buys a ${item.name} for ${this.formatCurrency(item.cost)}. ` +
+             `${person} pays with ${output.payment_description}. How much change should ${person} receive?`;
+    } else if (output.problem_type === 'multiple_items') {
+      const itemList = output.items.map((item: any) => `${item.quantity} ${item.name}${item.quantity > 1 ? 's' : ''} for ${this.formatCurrency(item.cost * item.quantity)}`).join(' and ');
+      return `${person} buys ${itemList} (total: ${this.formatCurrency(output.total_cost)}). ` +
+             `${person} pays with ${output.payment_description}. How much change should ${person} receive?`;
+    }
+    
+    return `${person} needs to calculate change from a purchase.`;
+  }
+
+  private generateMoneyCombinationsQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Emma';
+    const targetAmount = output.formatted_target;
+    
+    switch (output.problem_type) {
+      case 'find_combinations':
+        return `Show ${output.combinations.length} different ways to make ${targetAmount} using coins.`;
+      
+      case 'make_amount':
+        return `${person} wants to make ${targetAmount}. Show one way to do this using coins.`;
+      
+      case 'equivalent_amounts':
+        return `${person} has ${targetAmount}. Show three different combinations of coins that make this amount.`;
+      
+      case 'compare_combinations':
+        return `${person} wants to make ${targetAmount}. Which combination uses fewer coins?`;
+      
+      default:
+        return `Find different ways to make ${targetAmount} using coins.`;
+    }
+  }
+
+  private generateMixedMoneyUnitsQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'James';
+    
+    switch (output.problem_type) {
+      case 'convert_units':
+        if (output.conversion_type === 'pence_to_pounds') {
+          return `${person} has ${output.formatted_source}. How much is this in pounds?`;
+        } else if (output.conversion_type === 'pounds_to_pence') {
+          return `${person} has ${output.formatted_source}. How much is this in pence?`;
+        }
+        break;
+      
+      case 'add_mixed_units':
+        const amounts = output.amounts.map((amt: any) => amt.formatted).join(' and ');
+        return `${person} has ${amounts}. What is the total amount?`;
+      
+      case 'subtract_mixed_units':
+        return `${person} has ${output.formatted_source} and spends ${output.amount_spent.formatted}. How much is left?`;
+      
+      default:
+        return `${person} needs to work with pounds and pence.`;
+    }
+    
+    return `Convert between pounds and pence.`;
+  }
+
+  private generateMoneyFractionsQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Lucy';
+    const amount = this.formatCurrency(output.whole_amount);
+    const fractionText = this.getFractionText(output.fraction);
+    
+    switch (output.problem_type) {
+      case 'fraction_of_amount':
+        return `${person} wants to save ${fractionText} of ${amount}. How much should ${person} save?`;
+      
+      case 'find_fraction':
+        return `${person} has ${amount} and spends ${this.formatCurrency(output.spent_amount)}. What fraction of the money did ${person} spend?`;
+      
+      case 'compare_fractions':
+        return `${person} has ${amount}. Is ${fractionText} of this amount more than ${this.formatCurrency(output.comparison_amount)}?`;
+      
+      default:
+        return `Calculate ${fractionText} of ${amount}.`;
+    }
+  }
+
+  private generateMoneyScalingQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Alex';
+    
+    switch (output.problem_type) {
+      case 'scale_up':
+        return `If ${output.base_quantity} ${output.item}s cost ${this.formatCurrency(output.base_cost)}, ` +
+               `how much would ${output.target_quantity} ${output.item}s cost?`;
+      
+      case 'scale_down':
+        return `If ${output.base_quantity} ${output.item}s cost ${this.formatCurrency(output.base_cost)}, ` +
+               `how much would ${output.target_quantity} ${output.item}s cost?`;
+      
+      case 'find_unit_cost':
+        return `${output.base_quantity} ${output.item}s cost ${this.formatCurrency(output.base_cost)}. ` +
+               `What is the cost of one ${output.item}?`;
+      
+      default:
+        return `${person} needs to calculate proportional costs for ${output.item}s.`;
+    }
+  }
+
+  private formatCurrency(amount: number): string {
+    if (amount >= 100) {
+      return `£${(amount / 100).toFixed(2)}`;
+    } else {
+      return `${amount}p`;
+    }
+  }
+
+  private getFractionText(fraction: any): string {
+    if (fraction.formatted === "1/2") return "half";
+    if (fraction.formatted === "1/3") return "one third";
+    if (fraction.formatted === "1/4") return "one quarter";
+    if (fraction.formatted === "3/4") return "three quarters";
+    return fraction.formatted;
+  }
+
+  // Geometry question generators
+  private generateShapeRecognitionQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Tom';
+    
+    switch (output.problem_type) {
+      case 'identify_shape':
+        return `${person} is looking at a shape. What shape is this?`;
+      
+      case 'count_sides':
+        const shapeName = output.target_shape;
+        return `${person} is looking at a ${shapeName}. How many sides does this shape have?`;
+      
+      case 'count_vertices':
+        const shapeForVertices = output.target_shape;
+        return `${person} is looking at a ${shapeForVertices}. How many vertices (corners) does this shape have?`;
+      
+      case 'compare_shapes':
+        const shape1 = output.shape_data[0]?.name;
+        const shape2 = output.shape_data[1]?.name;
+        return `${person} has a ${shape1} and a ${shape2}. Which shape has more sides?`;
+      
+      default:
+        return `${person} needs to identify the shape.`;
+    }
   }
 }

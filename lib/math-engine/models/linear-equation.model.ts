@@ -85,18 +85,33 @@ export class LinearEquationModel implements IMathModel<LinearEquationDifficultyP
   private generateSlope(params: LinearEquationDifficultyParams): number {
     let slope: number;
     let attempts = 0;
+    const maxAttempts = 100;
+    
+    // Determine valid range for slopes
+    let minSlope = params.slope_range.min;
+    let maxSlope = params.slope_range.max;
+    
+    // Adjust range based on constraints
+    if (!params.allow_negative_slope) {
+      minSlope = Math.max(minSlope, 1); // Ensure positive and not zero
+    }
+    
+    // Ensure we have a valid range
+    if (minSlope >= maxSlope) {
+      return minSlope;
+    }
     
     do {
       slope = generateRandomNumber(
-        params.slope_range.max,
+        maxSlope,
         params.decimal_places,
-        params.slope_range.min
+        minSlope
       );
       attempts++;
       
       // Safety valve to prevent infinite loops
-      if (attempts > 100) {
-        slope = params.slope_range.min + 1; // Safe fallback
+      if (attempts > maxAttempts) {
+        slope = minSlope === 0 ? 1 : minSlope; // Safe fallback, never zero
         break;
       }
     } while (
@@ -108,25 +123,37 @@ export class LinearEquationModel implements IMathModel<LinearEquationDifficultyP
   }
 
   private generateIntercept(params: LinearEquationDifficultyParams): number {
-    let intercept = generateRandomNumber(
-      params.intercept_range.max,
-      params.decimal_places,
-      params.intercept_range.min
-    );
-
-    if (!params.allow_negative_intercept && intercept < 0) {
-      intercept = Math.abs(intercept);
+    let minIntercept = params.intercept_range.min;
+    let maxIntercept = params.intercept_range.max;
+    
+    // Adjust range if negative intercepts not allowed
+    if (!params.allow_negative_intercept) {
+      minIntercept = Math.max(minIntercept, 0);
     }
-
-    return intercept;
+    
+    // Ensure valid range
+    if (minIntercept > maxIntercept) {
+      return minIntercept;
+    }
+    
+    return generateRandomNumber(
+      maxIntercept,
+      params.decimal_places,
+      minIntercept
+    );
   }
 
   private generateXValues(params: LinearEquationDifficultyParams): number[] {
     const xValues: number[] = [];
     const usedValues = new Set<number>();
     let attempts = 0;
+    const maxAttempts = 1000;
+    
+    // Calculate available range
+    const rangeSize = params.x_range.max - params.x_range.min + 1;
+    const requestedCount = Math.min(params.x_value_count, rangeSize);
 
-    while (xValues.length < params.x_value_count) {
+    while (xValues.length < requestedCount) {
       const x = generateRandomNumber(
         params.x_range.max,
         0, // X values are typically integers
@@ -139,16 +166,12 @@ export class LinearEquationModel implements IMathModel<LinearEquationDifficultyP
       }
       
       attempts++;
-      // Safety valve - if we can't generate enough unique values, just fill with sequential values
-      if (attempts > 1000) {
-        while (xValues.length < params.x_value_count) {
-          let nextX = params.x_range.min + xValues.length;
-          if (nextX > params.x_range.max) {
-            break;
-          }
-          if (!usedValues.has(nextX)) {
-            xValues.push(nextX);
-            usedValues.add(nextX);
+      // Safety valve - if we can't generate enough unique values, fill systematically
+      if (attempts > maxAttempts) {
+        for (let i = params.x_range.min; i <= params.x_range.max && xValues.length < requestedCount; i++) {
+          if (!usedValues.has(i)) {
+            xValues.push(i);
+            usedValues.add(i);
           }
         }
         break;

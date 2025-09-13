@@ -149,98 +149,102 @@ export const MODEL_STATUS_REGISTRY: { [modelId: string]: ModelStatusInfo } = {
   'LINEAR_EQUATION': {
     id: 'LINEAR_EQUATION',
     name: 'Linear Equations',
-    status: ModelStatus.BROKEN,
+    status: ModelStatus.COMPLETE,
     description: 'Basic algebra and linear relationships',
     curriculumAreas: ['Algebra'],
     supportedYears: [5, 6],
-    lastTested: '2024-09-04',
-    knownIssues: [
-      'API requests timeout due to infinite loops',
-      'generateRandomNumber parameter order issues',
-      'Needs debugging of slope generation logic'
-    ]
+    lastTested: '2024-09-13',
+    completionNotes: 'Fixed parameter bounds checking and infinite loop issues'
   },
 
   'UNIT_RATE': {
     id: 'UNIT_RATE',
     name: 'Unit Rates',
-    status: ModelStatus.BROKEN,
+    status: ModelStatus.COMPLETE,
     description: 'Rate calculations and value comparisons',
     curriculumAreas: ['Ratio and proportion'],
     supportedYears: [5, 6],
-    lastTested: '2024-09-04',
-    knownIssues: [
-      'API requests timeout due to infinite loops',
-      'generateRandomNumber parameter order issues',
-      'Target quantity generation problems'
-    ]
+    lastTested: '2024-09-13',
+    completionNotes: 'Fixed infinite loops and parameter generation issues'
   },
 
   // Money Models - Newly Implemented
   'COIN_RECOGNITION': {
     id: 'COIN_RECOGNITION',
     name: 'Coin Recognition',
-    status: ModelStatus.WIP,
+    status: ModelStatus.COMPLETE,
     description: 'Identifying UK coins and notes',
     curriculumAreas: ['Measurement'],
     supportedYears: [1, 2, 3],
-    lastTested: '2024-09-04',
-    knownIssues: ['API timeout issues - needs testing']
+    lastTested: '2024-09-13',
+    completionNotes: 'Added story engine support and fixed field mapping'
   },
 
   'CHANGE_CALCULATION': {
     id: 'CHANGE_CALCULATION',
     name: 'Change Calculation',
-    status: ModelStatus.WIP,
+    status: ModelStatus.COMPLETE,
     description: 'Calculating change from purchases',
     curriculumAreas: ['Measurement'],
     supportedYears: [2, 3, 4, 5],
-    lastTested: '2024-09-04',
-    knownIssues: ['API timeout issues - needs testing']
+    lastTested: '2024-09-13',
+    completionNotes: 'Added story engine support for single and multiple item purchases'
   },
 
   'MONEY_COMBINATIONS': {
     id: 'MONEY_COMBINATIONS',
     name: 'Money Combinations',
-    status: ModelStatus.WIP,
+    status: ModelStatus.COMPLETE,
     description: 'Different ways to make the same amount',
     curriculumAreas: ['Measurement'],
     supportedYears: [2, 3, 4],
-    lastTested: '2024-09-04',
-    knownIssues: ['API timeout issues - needs testing']
+    lastTested: '2024-09-13',
+    completionNotes: 'Added story engine support for multiple combination types'
   },
 
   'MIXED_MONEY_UNITS': {
     id: 'MIXED_MONEY_UNITS',
     name: 'Mixed Money Units',
-    status: ModelStatus.WIP,
+    status: ModelStatus.COMPLETE,
     description: 'Working with pounds and pence together',
     curriculumAreas: ['Measurement'],
     supportedYears: [3, 4, 5],
-    lastTested: '2024-09-04',
-    knownIssues: ['API timeout issues - needs testing']
+    lastTested: '2024-09-13',
+    completionNotes: 'Added story engine support for unit conversions'
   },
 
   'MONEY_FRACTIONS': {
     id: 'MONEY_FRACTIONS',
     name: 'Money Fractions',
-    status: ModelStatus.WIP,
+    status: ModelStatus.COMPLETE,
     description: 'Fractional amounts of money',
     curriculumAreas: ['Fractions (including decimals and percentages)', 'Measurement'],
     supportedYears: [4, 5, 6],
-    lastTested: '2024-09-04',
-    knownIssues: ['API timeout issues - needs testing']
+    lastTested: '2024-09-13',
+    completionNotes: 'Added story engine support for fractional money calculations'
   },
 
   'MONEY_SCALING': {
     id: 'MONEY_SCALING',
     name: 'Money Scaling',
-    status: ModelStatus.WIP,
+    status: ModelStatus.COMPLETE,
     description: 'Proportional money problems',
     curriculumAreas: ['Ratio and proportion', 'Measurement'],
     supportedYears: [5, 6],
-    lastTested: '2024-09-04',
-    knownIssues: ['API timeout issues - needs testing']
+    lastTested: '2024-09-13',
+    completionNotes: 'Added story engine support for proportional scaling problems'
+  },
+
+  // Geometry Models - New
+  'SHAPE_RECOGNITION': {
+    id: 'SHAPE_RECOGNITION',
+    name: 'Shape Recognition',
+    status: ModelStatus.COMPLETE,
+    description: 'Identifying and comparing 2D and 3D shapes',
+    curriculumAreas: ['Geometry – properties of shapes'],
+    supportedYears: [1, 2, 3, 4, 5, 6],
+    lastTested: '2024-09-13',
+    completionNotes: 'Complete implementation with shape identification, counting properties, and comparisons'
   }
 };
 
