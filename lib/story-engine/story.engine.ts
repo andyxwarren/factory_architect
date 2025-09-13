@@ -86,6 +86,18 @@ export class StoryEngine {
     if (mathOutput.operation === 'SHAPE_RECOGNITION') {
       return this.generateShapeRecognitionQuestion(mathOutput, context);
     }
+    if (mathOutput.operation === 'SHAPE_PROPERTIES') {
+      return this.generateShapePropertiesQuestion(mathOutput, context);
+    }
+    if (mathOutput.operation === 'ANGLE_MEASUREMENT') {
+      return this.generateAngleMeasurementQuestion(mathOutput, context);
+    }
+    if (mathOutput.operation === 'POSITION_DIRECTION') {
+      return this.generatePositionDirectionQuestion(mathOutput, context);
+    }
+    if (mathOutput.operation === 'AREA_PERIMETER') {
+      return this.generateAreaPerimeterQuestion(mathOutput, context);
+    }
     
     return "Question generation not yet implemented for this model.";
   }
@@ -411,6 +423,14 @@ export class StoryEngine {
         return this.formatCurrency(mathOutput.scaled_cost);
       } else if (mathOutput.operation === 'SHAPE_RECOGNITION') {
         return String(mathOutput.correct_answer);
+      } else if (mathOutput.operation === 'SHAPE_PROPERTIES') {
+        return String(mathOutput.correct_answer);
+      } else if (mathOutput.operation === 'ANGLE_MEASUREMENT') {
+        return String(mathOutput.correct_answer);
+      } else if (mathOutput.operation === 'POSITION_DIRECTION') {
+        return String(mathOutput.correct_answer);
+      } else if (mathOutput.operation === 'AREA_PERIMETER') {
+        return String(mathOutput.correct_answer);
       } else {
         value = mathOutput.result || mathOutput.final_result || 0;
       }
@@ -665,5 +685,168 @@ export class StoryEngine {
       default:
         return `${person} needs to identify the shape.`;
     }
+  }
+
+  private generateShapePropertiesQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Emma';
+    const shapeName = output.shape_name;
+    const propertyFocus = output.question_focus;
+    
+    switch (output.problem_type) {
+      case 'count_properties':
+        const propertyName = this.getPropertyDisplayName(propertyFocus);
+        return `${person} is studying a ${shapeName}. How many ${propertyName} does this shape have?`;
+      
+      case 'identify_property':
+        if (propertyFocus === 'right_angles') {
+          return `${person} is looking at a ${shapeName}. Does this shape have any right angles?`;
+        } else if (propertyFocus === 'parallel_sides') {
+          return `${person} is looking at a ${shapeName}. Does this shape have any parallel sides?`;
+        } else {
+          return `${person} is examining a ${shapeName}. What can you tell about its ${propertyFocus}?`;
+        }
+      
+      case 'compare_properties':
+        const shapes = shapeName.split(' vs ');
+        const shape1 = shapes[0];
+        const shape2 = shapes[1];
+        const propertyDisplay = this.getPropertyDisplayName(propertyFocus);
+        return `${person} is comparing shapes. Which shape has more ${propertyDisplay}: a ${shape1} or a ${shape2}?`;
+      
+      case 'classify_shapes':
+        const propertyDesc = this.getPropertyDisplayName(propertyFocus);
+        return `${person} needs to group shapes. Which of these shapes have ${propertyDesc}?`;
+      
+      default:
+        return `${person} is studying the properties of a ${shapeName}.`;
+    }
+  }
+
+  private generateAngleMeasurementQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Sophie';
+    
+    switch (output.problem_type) {
+      case 'identify_type':
+        return `${person} measures an angle and finds it is ${output.angle_degrees}°. What type of angle is this?`;
+      
+      case 'measure_angle':
+        if (output.context === 'clock') {
+          return `${person} is looking at a clock. ${output.visual_description}. What is the measurement of this angle?`;
+        } else if (output.context === 'shape') {
+          return `${person} is measuring an angle in a polygon. ${output.visual_description}. What is the measurement of this angle?`;
+        } else {
+          return `${person} needs to measure an angle. ${output.visual_description}. What is the measurement?`;
+        }
+      
+      case 'calculate_missing':
+        if (output.context === 'straight_line') {
+          return `${person} knows that angles on a straight line add up to 180°. ${output.visual_description}. What is the missing angle?`;
+        } else {
+          return `${person} knows that angles around a point add up to 360°. ${output.visual_description}. What is the missing angle?`;
+        }
+      
+      case 'convert_units':
+        return `${person} measured an angle as ${output.angle_degrees}°. ${output.visual_description}. What is this measurement in the requested unit?`;
+      
+      default:
+        return `${person} is working with angles.`;
+    }
+  }
+
+  private generatePositionDirectionQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Alex';
+    
+    switch (output.problem_type) {
+      case 'identify_position':
+        if (output.coordinate_system === 'coordinate_plane') {
+          return `${person} needs to identify the position of an object on a coordinate grid. What are the coordinates of the object?`;
+        } else if (output.coordinate_system === 'lettered_grid') {
+          return `${person} is looking at a grid with letters and numbers. What is the grid reference for the object?`;
+        } else {
+          return `${person} needs to describe the position of an object on the grid. What position is it in?`;
+        }
+      
+      case 'follow_directions':
+        const startDesc = this.formatPosition(output.start_position, output.coordinate_system);
+        return `${person} starts at ${startDesc}. ${output.visual_description}. Where does ${person} end up?`;
+      
+      case 'give_directions':
+        const startPos = this.formatPosition(output.start_position, output.coordinate_system);
+        const targetPos = this.formatPosition(output.target_position, output.coordinate_system);
+        return `${person} needs to get from ${startPos} to ${targetPos}. What directions should ${person} follow?`;
+      
+      case 'coordinates':
+        if (output.question_focus === 'x_coordinate') {
+          return `${person} is looking at a point on the coordinate plane. What is the x-coordinate?`;
+        } else if (output.question_focus === 'y_coordinate') {
+          return `${person} is looking at a point on the coordinate plane. What is the y-coordinate?`;
+        } else {
+          return `${person} needs to read the coordinates of a point. What are the coordinates?`;
+        }
+      
+      case 'compass_directions':
+        const centerDesc = this.formatPosition(output.start_position, output.coordinate_system);
+        return `${person} starts at ${centerDesc} and moves according to compass directions. ${output.visual_description}. Which compass direction did ${person} move?`;
+      
+      case 'relative_position':
+        return `${person} is comparing the positions of two objects on the grid. ${output.visual_description}. How would you describe the position of the second object relative to the first?`;
+      
+      default:
+        return `${person} is working with positions and directions on a grid.`;
+    }
+  }
+
+  private formatPosition(position: { x: number; y: number }, coordinateSystem: string): string {
+    if (coordinateSystem === 'coordinate_plane') {
+      return `(${position.x}, ${position.y})`;
+    } else if (coordinateSystem === 'lettered_grid') {
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+      const letter = letters[position.x - 1] || 'A';
+      return `${letter}${position.y}`;
+    } else {
+      return `column ${position.x}, row ${position.y}`;
+    }
+  }
+
+  private generateAreaPerimeterQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Maya';
+    const shapeType = output.shape_type;
+    const unit = output.measurement_unit;
+    
+    switch (output.problem_type) {
+      case 'calculate_area':
+        return `${person} needs to find the area of a ${shapeType}. ${output.visual_description}. What is the area?`;
+      
+      case 'calculate_perimeter':
+        const perimeterName = shapeType === 'circle' ? 'circumference' : 'perimeter';
+        return `${person} needs to find the ${perimeterName} of a ${shapeType}. ${output.visual_description}. What is the ${perimeterName}?`;
+      
+      case 'calculate_both':
+        return `${person} needs to find both the area and perimeter of a ${shapeType}. ${output.visual_description}. What are the area and perimeter?`;
+      
+      case 'find_missing_dimension':
+        const missingDim = output.missing_dimension?.name || 'dimension';
+        const knownType = output.area_result ? 'area' : 'perimeter';
+        const knownValue = output.area_result || output.perimeter_result;
+        const knownUnit = output.area_result ? `${unit}²` : unit;
+        return `${person} knows that a ${shapeType} has a ${knownType} of ${knownValue} ${knownUnit}. ${output.visual_description}. What is the missing ${missingDim}?`;
+      
+      default:
+        return `${person} is working with the area and perimeter of a ${shapeType}.`;
+    }
+  }
+
+  private getPropertyDisplayName(property: string): string {
+    const displayNames: { [key: string]: string } = {
+      'sides': 'sides',
+      'vertices': 'vertices (corners)',
+      'angles': 'angles',
+      'right_angles': 'right angles',
+      'parallel_sides': 'parallel sides',
+      'lines_of_symmetry': 'lines of symmetry',
+      'rotational_symmetry': 'rotational symmetry'
+    };
+    
+    return displayNames[property] || property;
   }
 }

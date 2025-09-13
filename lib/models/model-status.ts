@@ -245,6 +245,50 @@ export const MODEL_STATUS_REGISTRY: { [modelId: string]: ModelStatusInfo } = {
     supportedYears: [1, 2, 3, 4, 5, 6],
     lastTested: '2024-09-13',
     completionNotes: 'Complete implementation with shape identification, counting properties, and comparisons'
+  },
+
+  'SHAPE_PROPERTIES': {
+    id: 'SHAPE_PROPERTIES',
+    name: 'Shape Properties',
+    status: ModelStatus.COMPLETE,
+    description: 'Analyzing properties of 2D shapes including sides, vertices, angles, and symmetry',
+    curriculumAreas: ['Geometry – properties of shapes'],
+    supportedYears: [1, 2, 3, 4, 5, 6],
+    lastTested: '2024-09-13',
+    completionNotes: 'Complete implementation with property counting, identification, comparison, and classification'
+  },
+
+  'ANGLE_MEASUREMENT': {
+    id: 'ANGLE_MEASUREMENT',
+    name: 'Angle Measurement',
+    status: ModelStatus.COMPLETE,
+    description: 'Identifying, measuring, and calculating angles including type classification and unit conversions',
+    curriculumAreas: ['Geometry – properties of shapes'],
+    supportedYears: [3, 4, 5, 6],
+    lastTested: '2024-09-13',
+    completionNotes: 'Complete implementation with angle identification, measurement, missing angle calculations, and unit conversions'
+  },
+
+  'POSITION_DIRECTION': {
+    id: 'POSITION_DIRECTION',
+    name: 'Position & Direction',
+    status: ModelStatus.COMPLETE,
+    description: 'Working with coordinates, compass directions, and spatial relationships on grids',
+    curriculumAreas: ['Geometry – position and direction'],
+    supportedYears: [1, 2, 3, 4, 5, 6],
+    lastTested: '2024-09-13',
+    completionNotes: 'Complete implementation with position identification, direction following, coordinate systems, and relative positioning'
+  },
+
+  'AREA_PERIMETER': {
+    id: 'AREA_PERIMETER',
+    name: 'Area & Perimeter',
+    status: ModelStatus.COMPLETE,
+    description: 'Calculating area and perimeter of 2D shapes including finding missing dimensions',
+    curriculumAreas: ['Measurement'],
+    supportedYears: [3, 4, 5, 6],
+    lastTested: '2024-09-13',
+    completionNotes: 'Complete implementation with area/perimeter calculations for rectangles, squares, triangles, and circles, plus missing dimension problems'
   }
 };
 

@@ -659,26 +659,24 @@ export interface AngleMeasurementOutput {
 
 // POSITION_DIRECTION Model
 export interface PositionDirectionDifficultyParams {
-  coordinate_types: string[];      // ['grid_references', 'coordinates', 'compass_directions']
-  grid_size: number;               // Size of coordinate grid
-  include_negative_numbers: boolean; // Include negative coordinates
-  transformation_types: string[]; // ['translation', 'rotation', 'reflection']
-  problem_types: string[];        // ['find_position', 'give_directions', 'transform_shape']
-  max_movements: number;          // Maximum number of movement steps
+  coordinate_system: string;       // 'simple_grid', 'lettered_grid', 'coordinate_plane'
+  use_compass_directions: boolean; // Include N/S/E/W directions
+  max_grid_size: number;          // Size of coordinate grid
+  include_diagonals: boolean;     // Include diagonal movements
+  movement_steps: number;         // Maximum number of movement steps
+  problem_types: string[];        // ['identify_position', 'follow_directions', 'give_directions', 'coordinates', 'compass_directions', 'relative_position']
 }
 
 export interface PositionDirectionOutput {
   operation: "POSITION_DIRECTION";
   problem_type: string;
-  start_position?: { x: number; y: number; label?: string };
-  end_position?: { x: number; y: number; label?: string };
-  movements?: Array<{ direction: string; distance: number }>;
-  transformation?: {
-    type: string;                  // 'translation', 'rotation', 'reflection'
-    parameters: any;               // Specific transformation details
-  };
-  grid_reference?: string;         // Grid reference like 'A3' or '(2,3)'
-  compass_direction?: string;      // 'North', 'Northeast', etc.
+  start_position: { x: number; y: number };
+  target_position: { x: number; y: number };
+  movements?: Array<{ direction: string; steps: number }>;
+  coordinate_system: string;
+  grid_size: number;
+  question_focus?: string;
+  visual_description: string;
   correct_answer: string;
 }
 
@@ -694,19 +692,14 @@ export interface AreaPerimeterDifficultyParams {
 
 export interface AreaPerimeterOutput {
   operation: "AREA_PERIMETER";
-  problem_type: string;           // 'calculate_area', 'calculate_perimeter', 'find_dimension'
+  problem_type: string;           // 'calculate_area', 'calculate_perimeter', 'calculate_both', 'find_missing_dimension'
   shape_type: string;
-  dimensions: {
-    length?: number;
-    width?: number;
-    height?: number;
-    radius?: number;
-    side_lengths?: number[];      // For irregular shapes
-  };
-  area?: number;
-  perimeter?: number;
-  units: string;
-  formula_used?: string;
-  working_steps?: string[];
-  correct_answer: string | number;
+  dimensions: any;                // Flexible object containing shape-specific dimensions
+  measurement_unit: string;
+  area_result?: number;
+  perimeter_result?: number;
+  missing_dimension?: { name: string; value: number };
+  formula_used: string;
+  visual_description: string;
+  correct_answer: string;
 }

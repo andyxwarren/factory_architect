@@ -18,6 +18,10 @@ import { MixedMoneyUnitsModel } from './models/mixed-money-units.model';
 import { MoneyFractionsModel } from './models/money-fractions.model';
 import { MoneyScalingModel } from './models/money-scaling.model';
 import { ShapeRecognitionModel } from './models/shape-recognition.model';
+import { ShapePropertiesModel } from './models/shape-properties.model';
+import { AngleMeasurementModel } from './models/angle-measurement.model';
+import { PositionDirectionModel } from './models/position-direction.model';
+import { AreaPerimeterModel } from './models/area-perimeter.model';
 import { DifficultyPresets } from './difficulty';
 
 // Model Registry
@@ -41,7 +45,11 @@ export const mathModels = {
   MIXED_MONEY_UNITS: new MixedMoneyUnitsModel(),
   MONEY_FRACTIONS: new MoneyFractionsModel(),
   MONEY_SCALING: new MoneyScalingModel(),
-  SHAPE_RECOGNITION: new ShapeRecognitionModel()
+  SHAPE_RECOGNITION: new ShapeRecognitionModel(),
+  SHAPE_PROPERTIES: new ShapePropertiesModel(),
+  ANGLE_MEASUREMENT: new AngleMeasurementModel(),
+  POSITION_DIRECTION: new PositionDirectionModel(),
+  AREA_PERIMETER: new AreaPerimeterModel()
 };
 
 export type ModelId = keyof typeof mathModels;

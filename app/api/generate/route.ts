@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
                      'MULTI_STEP', 'LINEAR_EQUATION', 'UNIT_RATE',
                      'COIN_RECOGNITION', 'CHANGE_CALCULATION', 'MONEY_COMBINATIONS',
                      'MIXED_MONEY_UNITS', 'MONEY_FRACTIONS', 'MONEY_SCALING',
-                     'SHAPE_RECOGNITION'];
+                     'SHAPE_RECOGNITION', 'SHAPE_PROPERTIES', 'ANGLE_MEASUREMENT', 'POSITION_DIRECTION', 'AREA_PERIMETER'];
     if (!modelIds.includes(model_id)) {
       return NextResponse.json(
         { error: `Invalid model_id: ${model_id}` },
