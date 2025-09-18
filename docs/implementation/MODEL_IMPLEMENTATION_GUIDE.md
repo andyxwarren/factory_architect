@@ -333,9 +333,13 @@ This guide provides a comprehensive analysis of mathematical model implementatio
 - 📋 **PLANNED:** Identified need, not yet implemented
 
 ### Testing Protocol
-1. **Web interface testing** at [`/test`](app/test/page.tsx) 
+1. **Web interface testing** at [`/test`](app/test/page.tsx)
+   - **NEW:** Batch question generation (1-20 questions)
+   - **NEW:** Export functionality (JSON/CSV formats)
+   - **NEW:** Batch statistics and performance metrics
+   - Interactive parameter controls and real-time preview
 2. **Parameter validation** across year levels
-3. **Edge case handling** 
+3. **Edge case handling**
 4. **Performance benchmarking**
 5. **Curriculum alignment verification** using [`lib/curriculum/curriculum-parser.ts`](lib/curriculum/curriculum-parser.ts)
 

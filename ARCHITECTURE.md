@@ -1,21 +1,10 @@
+# Factory Architect Technical Architecture
 
-
-
-### 2. The A+ Blueprint Response You Received
-
-This is the final, developer-ready blueprint.
-
-```text
-# Math Engine Architecture Blueprint
-## TypeScript-Based Question Generator for UK National Curriculum Mathematics
-
----
+This document provides comprehensive technical details for implementing the Factory Architect question generation system.
 
 ## Executive Summary
 
-This blueprint defines a collection of **atomic mathematical models** that form the core of the Math Engine. Each model operates purely on numerical and logical parameters, with zero awareness of real-world context. The Story Engine will consume the mathematical outputs and apply contextual narratives.
-
----
+Factory Architect implements a collection of **atomic mathematical models** that form the core of the Math Engine. Each model operates purely on numerical and logical parameters, with zero awareness of real-world context. The Story Engine consumes mathematical outputs and applies contextual narratives.
 
 ## Core Mathematical Models
 
@@ -49,8 +38,8 @@ Summing an array of numerical values to produce a total.
 ```json
 {
   "operation": "ADDITION",
-  "operands":,
-  "result": 60,
+  "operands": [0.35, 0.25],
+  "result": 0.60,
   "intermediate_steps": [],
   "decimal_formatted": {
     "operands": ["0.35", "0.25"],
@@ -68,8 +57,6 @@ Summing an array of numerical values to produce a total.
   action_verb: string;         // "buys", "collects", "earns"
 }
 ```
-
----
 
 ### 2. SUBTRACTION Model
 
@@ -120,7 +107,6 @@ Finding the difference between two numerical values.
   removal_context: string;     // "costs", "spent", "reduced by"
 }
 ```
----
 
 ### 3. MULTIPLICATION Model
 
@@ -166,7 +152,6 @@ Computing the product of two or more numerical values.
   unit_descriptor: string;     // "tickets", "family members", "pens per pack"
 }
 ```
----
 
 ### 4. DIVISION Model
 
@@ -212,7 +197,6 @@ Dividing a dividend by a divisor to find quotient and optionally remainder.
   share_context: string;       // "equally between", "per unit", "each gets"
 }
 ```
----
 
 ### 5. MULTI_STEP Model
 
@@ -247,18 +231,18 @@ Executing a sequence of mathematical operations in a specified order.
     {
       "step": 1,
       "operation": "MULTIPLICATION",
-      "inputs":,
+      "inputs": [3, 6],
       "result": 18
     },
     {
       "step": 2,
       "operation": "SUBTRACTION",
-      "inputs":,
+      "inputs": [18, 16],
       "result": 2
     }
   ],
   "final_result": 2,
-  "intermediate_results":
+  "intermediate_results": [18]
 }
 ```
 
@@ -269,7 +253,6 @@ Executing a sequence of mathematical operations in a specified order.
   connecting_phrases: string[]; // ["then", "after that", "finally"]
 }
 ```
----
 
 ### 6. LINEAR_EQUATION Model
 
@@ -319,7 +302,6 @@ Evaluating a linear function of the form `y = mx + c` for a given input value.
   variable_context: string;    // "distance", "time", "quantity"
 }
 ```
----
 
 ### 7. PERCENTAGE Model
 
@@ -362,7 +344,6 @@ Calculating percentages of values, percentage increases/decreases, or finding pe
   value_descriptor: string;    // "original price", "savings", "population"
 }
 ```
----
 
 ### 8. UNIT_RATE Model
 
@@ -408,3 +389,177 @@ Calculating and comparing rates to determine unit costs or best value.
   comparison_phrase: string;   // "better value", "cheaper option"
 }
 ```
+
+## Implementation Guide
+
+### Phase 1: Project Setup and Type Definition
+
+1. **Define Core Interfaces**: Create `types.ts` with TypeScript interfaces for models
+   ```typescript
+   export interface IMathModel<TParams, TOutput> {
+     model_id: string;
+     generate(params: TParams): TOutput;
+   }
+   ```
+
+2. **Model Structure**: Each model follows this pattern:
+   ```typescript
+   export class AdditionModel implements IMathModel<AdditionDifficultyParams, AdditionOutput> {
+     public readonly model_id = "ADDITION";
+     public generate(params: AdditionDifficultyParams): AdditionOutput {
+       // Implementation logic
+     }
+   }
+   ```
+
+### Phase 2: Math Engine Implementation
+
+#### Directory Structure
+```
+src/
+├── lib/
+│   ├── math-engine/
+│   │   ├── models/           # Individual mathematical models
+│   │   │   ├── addition.model.ts
+│   │   │   ├── subtraction.model.ts
+│   │   │   ├── multiplication.model.ts
+│   │   │   ├── division.model.ts
+│   │   │   ├── multi-step.model.ts
+│   │   │   ├── linear-equation.model.ts
+│   │   │   ├── percentage.model.ts
+│   │   │   └── unit-rate.model.ts
+│   │   ├── difficulty.ts     # Difficulty progression logic
+│   │   └── index.ts         # Math engine exports
+│   ├── story-engine/
+│   │   ├── contexts/         # Story context libraries
+│   │   │   ├── money.context.ts
+│   │   │   ├── length.context.ts
+│   │   │   └── weight.context.ts
+│   │   ├── templates/        # Question templates
+│   │   └── story.engine.ts   # Story rendering logic
+│   ├── types.ts             # TypeScript interfaces
+│   └── utils.ts             # Utility functions
+├── app/
+│   ├── api/
+│   │   ├── generate/         # Question generation API
+│   │   ├── test/            # Model testing API
+│   │   └── models/          # Model information API
+│   ├── test/                # Web UI for testing models
+│   └── page.tsx             # Main dashboard
+└── components/              # UI components
+```
+
+### Phase 3: Story Engine Development
+
+#### Context System
+Create context libraries organized by theme:
+```typescript
+// money.context.ts
+export const shoppingContext = {
+  unit_type: "currency",
+  unit_symbol: "£",
+  item_descriptors: ["book", "pen", "comic"],
+  action_verb: "buys"
+};
+```
+
+#### Template System
+```typescript
+function renderAdditionQuestion(mathOutput: AdditionOutput, context: any): string {
+  return `If ${context.person} ${context.action_verb} a ${context.item_descriptors[0]} for ${mathOutput.decimal_formatted.operands[0]} and a ${context.item_descriptors[1]} for ${mathOutput.decimal_formatted.operands[1]}, how much is that?`;
+}
+```
+
+### Phase 4: Next.js Web Interface
+
+#### API Structure
+- `/api/generate` - Question generation endpoint
+- `/api/test` - Batch testing endpoint
+- `/api/models` - Model information endpoint
+
+#### Testing Interface Features
+- Interactive parameter controls for each model
+- Real-time question generation and preview
+- Batch testing with statistical analysis
+- Export functionality for generated questions
+
+#### Components
+- `ModelSelector` - Choose mathematical model
+- `ParameterControls` - Adjust difficulty parameters
+- `QuestionDisplay` - Show generated questions
+- `TestInterface` - Main testing dashboard
+
+### Phase 5: Difficulty and Progression
+
+#### Difficulty Presets
+```typescript
+export function getDifficultyParams(model_id: string, year: number): object {
+  if (model_id === "ADDITION" && year <= 2) {
+    return {
+      operand_count: 2,
+      max_value: 20,
+      decimal_places: 0,
+      allow_carrying: false
+    };
+  }
+  // Additional year-specific rules...
+}
+```
+
+#### Year Level Progression
+- **Years 1-2**: Basic operations with small whole numbers
+- **Years 3-4**: Introduction of decimals and larger numbers
+- **Years 5-6**: Complex operations with advanced concepts
+
+### Phase 6: Testing Strategy
+
+#### Unit Testing
+- Test each mathematical model independently
+- Verify output contracts and parameter handling
+- Edge case validation (division by zero, etc.)
+
+#### Integration Testing
+- End-to-end question generation pipeline
+- Context integration with mathematical outputs
+- API endpoint functionality
+
+#### Web Interface Testing
+- Interactive parameter adjustment
+- Batch generation performance
+- Export functionality validation
+
+### Phase 7: Deployment and Production
+
+#### Build Process
+```bash
+npm run build    # Production build
+npm run start    # Production server
+```
+
+#### Performance Considerations
+- Model instantiation and caching
+- Batch generation optimization
+- API response caching strategies
+
+#### Monitoring
+- Question generation success rates
+- Performance metrics per model
+- User interaction analytics
+
+## Development Workflow
+
+1. **Model Development**: Implement atomic models following interface patterns
+2. **Unit Testing**: Comprehensive testing of each model
+3. **Context Integration**: Create story contexts and templates
+4. **Web Interface**: Build interactive testing dashboard
+5. **API Development**: Create generation and testing endpoints
+6. **Production Deployment**: Build and deploy system
+
+## Quality Assurance
+
+- **Educational Accuracy**: Align with UK National Curriculum requirements
+- **Mathematical Precision**: Ensure correct calculations across all models
+- **Scalable Architecture**: Support for additional models and contexts
+- **Performance Optimization**: Efficient generation for large question sets
+
+This architecture provides a robust foundation for generating educational mathematics questions with precise difficulty control and flexible contextual presentation.

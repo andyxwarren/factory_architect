@@ -23,7 +23,7 @@ export default function TestPage() {
   const [selectedYear, setSelectedYear] = useState(4);
   const [selectedSubLevel, setSelectedSubLevel] = useState(3);
   const [useEnhancedDifficulty, setUseEnhancedDifficulty] = useState(true);
-  const [sessionId] = useState(() => `session_${Date.now()}`);
+  const [sessionId, setSessionId] = useState('session_default');
   const [adaptiveMode, setAdaptiveMode] = useState(false);
   const [confidenceMode, setConfidenceMode] = useState(false);
   
@@ -42,10 +42,19 @@ export default function TestPage() {
   
   // Question state
   const [generatedQuestion, setGeneratedQuestion] = useState<GeneratedQuestion | null>(null);
+  const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
+  const [batchMetadata, setBatchMetadata] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
   const [questionHistory, setQuestionHistory] = useState<GeneratedQuestion[]>([]);
+  const [quantity, setQuantity] = useState(1);
+  const [showBatchView, setShowBatchView] = useState(false);
+
+  // Initialize session ID after hydration
+  useEffect(() => {
+    setSessionId(`session_${Date.now()}`);
+  }, []);
 
   // Initialize curriculum data
   useEffect(() => {
@@ -112,7 +121,8 @@ export default function TestPage() {
     try {
       const requestBody: any = {
         model_id: model,
-        context_type: 'money'
+        context_type: 'money',
+        quantity: quantity
       };
 
       // Use enhanced difficulty system if available and enabled
@@ -137,13 +147,61 @@ export default function TestPage() {
         throw new Error(`Failed to generate question: ${response.statusText}`);
       }
 
-      const data: GeneratedQuestion = await response.json();
-      setGeneratedQuestion(data);
-      setQuestionHistory(prev => [data, ...prev.slice(0, 9)]);
+      const data = await response.json();
+
+      if (quantity === 1) {
+        // Single question response
+        const singleQuestion: GeneratedQuestion = data;
+        setGeneratedQuestion(singleQuestion);
+        setGeneratedQuestions([]);
+        setBatchMetadata(null);
+        setShowBatchView(false);
+        setQuestionHistory(prev => [singleQuestion, ...prev.slice(0, 9)]);
+      } else {
+        // Batch response
+        setGeneratedQuestion(null);
+        setGeneratedQuestions(data.questions);
+        setBatchMetadata(data.batch_metadata);
+        setShowBatchView(true);
+        setQuestionHistory(prev => [...data.questions, ...prev].slice(0, 20));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const downloadAsJSON = () => {
+    if (showBatchView && generatedQuestions.length > 0) {
+      const dataToDownload = {
+        questions: generatedQuestions,
+        batch_metadata: batchMetadata
+      };
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToDownload, null, 2));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", `questions_${batchMetadata.model_id}_${batchMetadata.quantity}.json`);
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+    }
+  };
+
+  const downloadAsCSV = () => {
+    if (showBatchView && generatedQuestions.length > 0) {
+      const csvContent = "Question,Answer,Model,Year Level,Sub Level\n" +
+        generatedQuestions.map(q =>
+          `"${q.question.replace(/"/g, '""')}","${q.answer}","${q.metadata.model_id}","${q.metadata.year_level}","${q.metadata.sub_level || 'N/A'}"`
+        ).join('\n');
+
+      const dataStr = "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent);
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", `questions_${batchMetadata.model_id}_${batchMetadata.quantity}.csv`);
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
     }
   };
 
@@ -489,13 +547,35 @@ export default function TestPage() {
                 </div>
               )}
 
+              {/* Quantity Selector */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Number of Questions
+                </label>
+                <select
+                  value={quantity}
+                  onChange={(e) => setQuantity(parseInt(e.target.value))}
+                  className="w-full p-2 border rounded-md bg-white"
+                  disabled={loading}
+                >
+                  {[1, 2, 3, 5, 10, 15, 20].map(num => (
+                    <option key={num} value={num}>
+                      {num} question{num > 1 ? 's' : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {quantity === 1 ? 'Single question mode' : `Batch generation mode - ${quantity} questions`}
+                </p>
+              </div>
+
               {/* Generate Button */}
               <button
                 onClick={() => generateQuestion()}
                 disabled={loading || (filterMode === 'curriculum' && suggestedModels.length === 0) || (filterMode === 'model' && isModelDisabled(selectedModel))}
                 className="w-full mt-6 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
-                {loading ? 'Generating...' : 'Generate Question'}
+                {loading ? 'Generating...' : (quantity === 1 ? 'Generate Question' : `Generate ${quantity} Questions`)}
               </button>
             </div>
           </div>
@@ -503,8 +583,28 @@ export default function TestPage() {
           {/* Question Display */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-lg font-semibold mb-4">Generated Question</h2>
-              
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">
+                  {showBatchView ? `Generated Questions (${generatedQuestions.length})` : 'Generated Question'}
+                </h2>
+                {showBatchView && generatedQuestions.length > 0 && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={downloadAsJSON}
+                      className="px-3 py-1 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700"
+                    >
+                      Export JSON
+                    </button>
+                    <button
+                      onClick={downloadAsCSV}
+                      className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                    >
+                      Export CSV
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700">
                   {error}
@@ -562,7 +662,83 @@ export default function TestPage() {
                 </div>
               )}
 
-              {!generatedQuestion && !loading && !error && (
+              {/* Batch Questions Display */}
+              {showBatchView && generatedQuestions.length > 0 && (
+                <div>
+                  {/* Batch Statistics */}
+                  {batchMetadata && (
+                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-blue-900">Total Questions:</span>
+                          <p className="text-blue-800">{batchMetadata.quantity}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-blue-900">Generation Time:</span>
+                          <p className="text-blue-800">{batchMetadata.total_generation_time_ms}ms</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-blue-900">Average per Question:</span>
+                          <p className="text-blue-800">{Math.round(batchMetadata.average_generation_time_ms)}ms</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-blue-900">Model:</span>
+                          <p className="text-blue-800">
+                            {batchMetadata.model_id}
+                            {batchMetadata.enhanced_system_used && (
+                              <span className="ml-1 text-green-600">✨</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Questions Grid */}
+                  <div className="space-y-4">
+                    {generatedQuestions.map((question, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                            Question {index + 1}
+                          </span>
+                          <button
+                            onClick={() => setShowAnswer(showAnswer === index ? -1 : index)}
+                            className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                          >
+                            {showAnswer === index ? 'Hide Answer' : 'Show Answer'}
+                          </button>
+                        </div>
+
+                        <div className="mb-3 p-3 bg-gray-50 rounded-md">
+                          <p className="text-gray-900 font-medium">{question.question}</p>
+                        </div>
+
+                        {showAnswer === index && (
+                          <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                            <p className="text-green-800 font-semibold">
+                              Answer: {question.answer}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="text-xs text-gray-500">
+                          {question.metadata.sub_level ? (
+                            <span className="text-green-600 font-medium">Level: {question.metadata.sub_level}</span>
+                          ) : (
+                            <span>Year: {question.metadata.year_level}</span>
+                          )}
+                          {question.metadata.enhanced_system_used && (
+                            <span className="ml-2 text-green-600">✨ Enhanced</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!generatedQuestion && !showBatchView && !loading && !error && (
                 <div className="text-center py-12 text-gray-500">
                   <p>Select your preferences above and click "Generate Question" to start.</p>
                 </div>

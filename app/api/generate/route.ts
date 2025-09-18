@@ -12,24 +12,26 @@ interface EnhancedGenerateRequest extends GenerateRequest {
   session_id?: string; // For progression tracking
   adaptive_mode?: boolean; // Enable adaptive difficulty
   confidence_mode?: boolean; // Enable confidence mode
+  quantity?: number; // Number of questions to generate in batch
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body: EnhancedGenerateRequest = await req.json();
-    const { 
-      model_id, 
-      difficulty_params, 
-      context_type = 'money', 
+    const {
+      model_id,
+      difficulty_params,
+      context_type = 'money',
       year_level = 4,
       sub_level,
       session_id,
       adaptive_mode = false,
-      confidence_mode = false
+      confidence_mode = false,
+      quantity = 1
     } = body;
 
     // Validate model exists
-    const modelIds = ['ADDITION', 'SUBTRACTION', 'MULTIPLICATION', 'DIVISION', 'PERCENTAGE', 
+    const modelIds = ['ADDITION', 'SUBTRACTION', 'MULTIPLICATION', 'DIVISION', 'PERCENTAGE',
                      'FRACTION', 'COUNTING', 'TIME_RATE', 'CONVERSION', 'COMPARISON',
                      'MULTI_STEP', 'LINEAR_EQUATION', 'UNIT_RATE',
                      'COIN_RECOGNITION', 'CHANGE_CALCULATION', 'MONEY_COMBINATIONS',
@@ -38,6 +40,14 @@ export async function POST(req: NextRequest) {
     if (!modelIds.includes(model_id)) {
       return NextResponse.json(
         { error: `Invalid model_id: ${model_id}` },
+        { status: 400 }
+      );
+    }
+
+    // Validate quantity
+    if (quantity < 1 || quantity > 20) {
+      return NextResponse.json(
+        { error: 'Quantity must be between 1 and 20' },
         { status: 400 }
       );
     }
@@ -89,45 +99,81 @@ export async function POST(req: NextRequest) {
       actualLevel = EnhancedDifficultySystem.createLevel(year_level, 3); // Default to X.3 (standard level)
     }
 
-    // Generate math output
-    const mathOutput = generateMathQuestion(
-      model_id as any,
-      actualLevel.year,
-      actualParams || getModel(model_id as any).getDefaultParams(actualLevel.year)
-    );
+    // Generate questions (batch support)
+    const questions: GeneratedQuestion[] = [];
+    const startTime = Date.now();
+    const storyEngine = new StoryEngine();
 
-    // Generate context based on type
-    let context;
-    switch (context_type) {
-      case 'money':
-        context = MoneyContextGenerator.generate(model_id);
-        break;
-      default:
-        context = MoneyContextGenerator.generate(model_id);
+    for (let i = 0; i < quantity; i++) {
+      // Generate math output
+      const mathOutput = generateMathQuestion(
+        model_id as any,
+        actualLevel.year,
+        actualParams || getModel(model_id as any).getDefaultParams(actualLevel.year)
+      );
+
+      // Generate context based on type
+      let context;
+      switch (context_type) {
+        case 'money':
+          context = MoneyContextGenerator.generate(model_id);
+          break;
+        default:
+          context = MoneyContextGenerator.generate(model_id);
+      }
+
+      // Generate question and answer using Story Engine
+      const question = storyEngine.generateQuestion(mathOutput, context);
+      const answer = storyEngine.generateAnswer(mathOutput, context);
+
+      const generatedQuestion: GeneratedQuestion = {
+        question,
+        answer,
+        math_output: mathOutput,
+        context,
+        metadata: {
+          model_id,
+          year_level: actualLevel.year,
+          sub_level: actualLevel.displayName,
+          difficulty_params: actualParams,
+          enhanced_system_used: usedEnhancedSystem,
+          session_id,
+          timestamp: new Date(),
+          question_index: i + 1
+        }
+      };
+
+      questions.push(generatedQuestion);
+
+      // Track attempt in session if provided
+      if (session_id) {
+        ProgressionTracker.recordAttempt(session_id, `q_${i+1}_${Date.now()}`, model_id, actualLevel, true, 0);
+      }
     }
 
-    // Generate question and answer using Story Engine
-    const storyEngine = new StoryEngine();
-    const question = storyEngine.generateQuestion(mathOutput, context);
-    const answer = storyEngine.generateAnswer(mathOutput, context);
+    const endTime = Date.now();
 
-    const response: GeneratedQuestion = {
-      question,
-      answer,
-      math_output: mathOutput,
-      context,
-      metadata: {
-        model_id,
-        year_level: actualLevel.year,
-        sub_level: actualLevel.displayName,
-        difficulty_params: actualParams,
-        enhanced_system_used: usedEnhancedSystem,
-        session_id,
-        timestamp: new Date()
-      }
-    };
-
-    return NextResponse.json(response);
+    // Return single question for backward compatibility, or batch response
+    if (quantity === 1) {
+      return NextResponse.json(questions[0]);
+    } else {
+      // Return batch response with statistics
+      const response = {
+        questions,
+        batch_metadata: {
+          quantity,
+          total_generation_time_ms: endTime - startTime,
+          average_generation_time_ms: (endTime - startTime) / quantity,
+          model_id,
+          year_level: actualLevel.year,
+          sub_level: actualLevel.displayName,
+          enhanced_system_used: usedEnhancedSystem,
+          session_id,
+          timestamp: new Date()
+        }
+      };
+      return NextResponse.json(response);
+    }
   } catch (error) {
     console.error('Error generating question:', error);
     return NextResponse.json(
@@ -142,11 +188,12 @@ export async function GET() {
     message: 'Question Generation API',
     endpoints: {
       POST: {
-        description: 'Generate a question',
+        description: 'Generate a question or batch of questions',
         body: {
           model_id: 'string (required) - ADDITION, SUBTRACTION, MULTIPLICATION, DIVISION, PERCENTAGE',
           year_level: 'number (optional) - 1 to 6',
           sub_level: 'string (optional) - X.Y format (e.g., "3.2") for enhanced difficulty',
+          quantity: 'number (optional) - 1 to 20, number of questions to generate',
           session_id: 'string (optional) - For progression tracking',
           adaptive_mode: 'boolean (optional) - Enable adaptive difficulty adjustments',
           confidence_mode: 'boolean (optional) - Enable confidence-based progression',
