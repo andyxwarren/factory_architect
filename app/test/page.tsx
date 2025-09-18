@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { GeneratedQuestion } from '@/lib/types';
 import { MODEL_STATUS_REGISTRY, ModelStatus, getCompletionStats } from '@/lib/models/model-status';
 import { curriculumParser, CurriculumFilter } from '@/lib/curriculum/curriculum-parser';
@@ -247,7 +248,23 @@ export default function TestPage() {
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Mathematics Question Generator</h1>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-bold text-gray-900">Mathematics Question Generator</h1>
+            <div className="flex gap-2">
+              <Link
+                href="/"
+                className="px-3 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm"
+              >
+                Home
+              </Link>
+              <Link
+                href="/curriculum-manager"
+                className="px-3 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 text-sm"
+              >
+                Curriculum Manager
+              </Link>
+            </div>
+          </div>
           <div className="flex items-center gap-4 text-sm text-gray-600">
             <span>Total Models: {completionStats.total}</span>
             <span className="text-green-600">Complete: {completionStats.complete}</span>

@@ -32,11 +32,13 @@ export class MoneyContextGenerator {
     const itemCount = operation === 'ADDITION' ? randomChoice([2, 3, 4]) : 1;
     const items = this.selectItems(itemCount);
     
+    const poundSymbol = '\u00A3'; // Unicode for £ symbol
+
     return {
       unit_type: 'currency',
-      unit_symbol: '£',
+      unit_symbol: poundSymbol,
       currency: 'pounds',
-      currency_symbol: '£',
+      currency_symbol: poundSymbol,
       person,
       items,
       item_descriptors: items,
@@ -82,25 +84,27 @@ export class MoneyContextGenerator {
 
   static formatMoney(value: number, includeSymbol: boolean = true): string {
     const formatted = value.toFixed(2);
-    
+    // Use Unicode code point to ensure proper encoding
+    const poundSymbol = '\u00A3'; // Unicode for £ symbol
+
     // Handle pence only (values less than 1)
     if (value < 1) {
       const pence = Math.round(value * 100);
       return includeSymbol ? `${pence}p` : `${pence} pence`;
     }
-    
+
     // Handle pounds and pence
     const pounds = Math.floor(value);
     const pence = Math.round((value - pounds) * 100);
-    
+
     if (pence === 0) {
-      return includeSymbol ? `£${pounds}` : `${pounds} pound${pounds !== 1 ? 's' : ''}`;
+      return includeSymbol ? `${poundSymbol}${pounds}` : `${pounds} pound${pounds !== 1 ? 's' : ''}`;
     }
-    
+
     if (includeSymbol) {
-      return `£${formatted}`;
+      return `${poundSymbol}${formatted}`;
     }
-    
+
     return `${pounds} pound${pounds !== 1 ? 's' : ''} and ${pence} pence`;
   }
 
@@ -113,10 +117,12 @@ export class MoneyContextGenerator {
     const costPercentage = randomChoice([0.3, 0.4, 0.5, 0.6, 0.7, 0.8]);
     const cost = Math.round(payment * costPercentage * 100) / 100;
     
+    const poundSymbol = '\u00A3'; // Unicode for £ symbol
+
     return {
       payment_amount: cost,
       tendered_amount: payment,
-      payment_description: `a £${payment} note`
+      payment_description: `a ${poundSymbol}${payment} note`
     };
   }
 }

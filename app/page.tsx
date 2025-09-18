@@ -79,13 +79,25 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="text-center">
-          <Link 
-            href="/test" 
-            className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
-          >
-            Try the Testing Interface
-          </Link>
+        <div className="text-center space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/test"
+              className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Question Testing Interface
+            </Link>
+            <Link
+              href="/curriculum-manager"
+              className="inline-block bg-green-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-green-700 transition-colors"
+            >
+              Curriculum Manager
+            </Link>
+          </div>
+          <p className="text-sm text-gray-600 max-w-2xl mx-auto">
+            Use the Testing Interface to generate and test individual questions, or the Curriculum Manager to generate
+            comprehensive question sets for every strand, substrand, year level, and sublevel combination.
+          </p>
         </div>
 
         <div className="mt-12 bg-gray-100 rounded-lg p-6">
