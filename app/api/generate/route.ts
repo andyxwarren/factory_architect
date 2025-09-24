@@ -7,6 +7,14 @@ import { EnhancedDifficultySystem } from '@/lib/math-engine/difficulty-enhanced'
 import { ProgressionTracker } from '@/lib/math-engine/progression-tracker';
 import { SubDifficultyLevel, DifficultyProgression } from '@/lib/types-enhanced';
 
+// Import enhanced system for redirect
+import {
+  QuestionOrchestrator,
+  EnhancedQuestionRequest
+} from '@/lib/orchestrator/question-orchestrator';
+import { ScenarioService } from '@/lib/services/scenario.service';
+import { DistractorEngine } from '@/lib/services/distractor-engine.service';
+
 interface EnhancedGenerateRequest extends GenerateRequest {
   sub_level?: string; // e.g., "3.2"
   session_id?: string; // For progression tracking
@@ -14,6 +22,27 @@ interface EnhancedGenerateRequest extends GenerateRequest {
   confidence_mode?: boolean; // Enable confidence mode
   quantity?: number; // Number of questions to generate in batch
 }
+
+// Initialize enhanced system components for legacy compatibility
+class MathEngineAdapter {
+  async generate(model: string, params: any): Promise<any> {
+    const modelInstance = getModel(model as any);
+    // Always use default params for the model to ensure proper structure
+    const defaultParams = modelInstance.getDefaultParams(4);
+    // Merge any provided params with defaults
+    const finalParams = { ...defaultParams, ...(params || {}) };
+    return modelInstance.generate(finalParams);
+  }
+
+  getModel(modelId: string) {
+    return getModel(modelId as any);
+  }
+}
+
+const mathEngine = new MathEngineAdapter();
+const scenarioService = new ScenarioService();
+const distractorEngine = new DistractorEngine();
+const orchestrator = new QuestionOrchestrator(mathEngine, scenarioService, distractorEngine);
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,122 +81,96 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Determine difficulty level to use
-    let actualLevel: SubDifficultyLevel;
-    let usedEnhancedSystem = false;
-    let actualParams: any = difficulty_params;
+    // Transform legacy request to enhanced format
+    const enhancedRequest: EnhancedQuestionRequest = {
+      model_id,
+      difficulty_level: sub_level || `${year_level}.3`, // Convert to X.Y format
+      format_preference: 'DIRECT_CALCULATION' as any, // Force direct calculation for legacy compatibility
+      difficulty_params,
+      session_id,
+      cultural_context: 'UK'
+    };
 
-    // Setup session if provided
-    if (session_id) {
-      const session = ProgressionTracker.getSession(session_id);
-      if (adaptive_mode) session.adaptiveMode = true;
-      if (confidence_mode) session.confidenceMode = true;
-    }
-
-    if (sub_level) {
-      // Use enhanced difficulty system with sub-levels
-      try {
-        actualLevel = EnhancedDifficultySystem.parseLevel(sub_level);
-        
-        // Check if enhanced system supports this model
-        const enhancedModels = ['ADDITION', 'SUBTRACTION', 'MULTIPLICATION', 'DIVISION', 'PERCENTAGE', 'FRACTION'];
-        if (enhancedModels.includes(model_id)) {
-          actualParams = EnhancedDifficultySystem.getSubLevelParams(model_id, actualLevel);
-          usedEnhancedSystem = true;
-        } else {
-          // Fall back to traditional system for unsupported models
-          actualLevel = EnhancedDifficultySystem.createLevel(Math.floor(parseFloat(sub_level)), 3);
-        }
-      } catch (error) {
-        return NextResponse.json(
-          { error: `Invalid sub_level format: ${sub_level}. Use format "X.Y" where X=1-6, Y=1-4` },
-          { status: 400 }
-        );
-      }
-    } else if (session_id && adaptive_mode) {
-      // Use adaptive difficulty recommendation
-      const recommendedLevel = ProgressionTracker.getRecommendedLevel(session_id, model_id);
-      actualLevel = recommendedLevel;
-      
-      const enhancedModels = ['ADDITION', 'SUBTRACTION', 'MULTIPLICATION', 'DIVISION', 'PERCENTAGE', 'FRACTION'];
-      if (enhancedModels.includes(model_id)) {
-        actualParams = EnhancedDifficultySystem.getSubLevelParams(model_id, actualLevel);
-        usedEnhancedSystem = true;
-      }
-    } else {
-      // Use traditional integer year level
-      actualLevel = EnhancedDifficultySystem.createLevel(year_level, 3); // Default to X.3 (standard level)
-    }
-
-    // Generate questions (batch support)
-    const questions: GeneratedQuestion[] = [];
     const startTime = Date.now();
-    const storyEngine = new StoryEngine();
 
-    for (let i = 0; i < quantity; i++) {
-      // Generate math output
-      const mathOutput = generateMathQuestion(
-        model_id as any,
-        actualLevel.year,
-        actualParams || getModel(model_id as any).getDefaultParams(actualLevel.year)
-      );
+    // Use enhanced system for generation
+    if (quantity === 1) {
+      // Single question generation
+      const enhancedQuestion = await orchestrator.generateQuestion(enhancedRequest);
 
-      // Generate context based on type
-      let context;
-      switch (context_type) {
-        case 'money':
-          context = MoneyContextGenerator.generate(model_id);
-          break;
-        default:
-          context = MoneyContextGenerator.generate(model_id);
-      }
-
-      // Generate question and answer using Story Engine
-      const question = storyEngine.generateQuestion(mathOutput, context);
-      const answer = storyEngine.generateAnswer(mathOutput, context);
-
-      const generatedQuestion: GeneratedQuestion = {
-        question,
-        answer,
-        math_output: mathOutput,
-        context,
+      // Transform to legacy format for backward compatibility
+      const legacyQuestion: GeneratedQuestion = {
+        question: enhancedQuestion.text,
+        answer: enhancedQuestion.options[enhancedQuestion.correctIndex].text,
+        math_output: enhancedQuestion.mathOutput,
+        context: enhancedQuestion.scenario,
         metadata: {
           model_id,
-          year_level: actualLevel.year,
-          sub_level: actualLevel.displayName,
-          difficulty_params: actualParams,
-          enhanced_system_used: usedEnhancedSystem,
+          year_level: enhancedQuestion.difficulty.year,
+          sub_level: enhancedQuestion.difficulty.displayName,
+          difficulty_params,
+          enhanced_system_used: true,
+          enhancement_status: enhancedQuestion.enhancementStatus.level,
+          format_requested: enhancedQuestion.enhancementStatus.requestedFormat,
+          format_used: enhancedQuestion.enhancementStatus.actualFormat,
+          features_active: enhancedQuestion.enhancementStatus.featuresActive,
+          features_pending: enhancedQuestion.enhancementStatus.featuresPending,
           session_id,
-          timestamp: new Date(),
-          question_index: i + 1
+          timestamp: new Date()
         }
       };
 
-      questions.push(generatedQuestion);
-
-      // Track attempt in session if provided
-      if (session_id) {
-        ProgressionTracker.recordAttempt(session_id, `q_${i+1}_${Date.now()}`, model_id, actualLevel, true, 0);
-      }
-    }
-
-    const endTime = Date.now();
-
-    // Return single question for backward compatibility, or batch response
-    if (quantity === 1) {
-      return NextResponse.json(questions[0]);
+      return NextResponse.json(legacyQuestion);
     } else {
-      // Return batch response with statistics
-      const response = {
-        questions,
-        batch_metadata: {
-          quantity,
-          total_generation_time_ms: endTime - startTime,
-          average_generation_time_ms: (endTime - startTime) / quantity,
+      // Batch question generation
+      const enhancedQuestions = [];
+      let successCount = 0;
+
+      for (let i = 0; i < quantity; i++) {
+        try {
+          const enhancedQuestion = await orchestrator.generateQuestion(enhancedRequest);
+          enhancedQuestions.push(enhancedQuestion);
+          successCount++;
+        } catch (error) {
+          console.warn(`Failed to generate question ${i + 1}:`, error);
+          // Continue with other questions
+        }
+      }
+
+      const endTime = Date.now();
+      const totalTime = endTime - startTime;
+
+      // Transform to legacy format for backward compatibility
+      const legacyQuestions: GeneratedQuestion[] = enhancedQuestions.map((eq, index) => ({
+        question: eq.text,
+        answer: eq.options[eq.correctIndex].text,
+        math_output: eq.mathOutput,
+        context: eq.scenario,
+        metadata: {
           model_id,
-          year_level: actualLevel.year,
-          sub_level: actualLevel.displayName,
-          enhanced_system_used: usedEnhancedSystem,
+          year_level: eq.difficulty.year,
+          sub_level: eq.difficulty.displayName,
+          difficulty_params,
+          enhanced_system_used: true,
+          enhancement_status: eq.enhancementStatus.level,
+          format_requested: eq.enhancementStatus.requestedFormat,
+          format_used: eq.enhancementStatus.actualFormat,
+          features_active: eq.enhancementStatus.featuresActive,
+          features_pending: eq.enhancementStatus.featuresPending,
+          session_id,
+          timestamp: new Date()
+        }
+      }));
+
+      const response = {
+        questions: legacyQuestions,
+        batch_metadata: {
+          quantity: successCount,
+          total_generation_time_ms: totalTime,
+          average_generation_time_ms: totalTime / Math.max(successCount, 1),
+          model_id,
+          enhanced_system_used: true,
+          enhancement_status: enhancedQuestions[0]?.enhancementStatus.level || 'fallback',
           session_id,
           timestamp: new Date()
         }

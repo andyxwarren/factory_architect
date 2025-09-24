@@ -34,7 +34,15 @@
       "Bash(timeout 120 npm run build)",
       "Bash(DISABLE_ESLINT=true npm run build)",
       "Read(/C:\\Users\\Andyx\\Documents\\projects\\factory_architect2\\context/**)",
-      "Read(/C:\\Users\\Andyx\\Documents\\projects\\factory_architect2\\factory-architect/**)"
+      "Read(/C:\\Users\\Andyx\\Documents\\projects\\factory_architect2\\factory-architect/**)",
+      "Bash(npx tsc:*)",
+      "Bash(python:*)",
+      "Bash(for i in {1..5})",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(awk:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": [],

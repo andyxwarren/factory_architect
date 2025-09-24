@@ -189,11 +189,44 @@ export default function TestPage() {
     }
   };
 
+  const getEnhancementStatusBadge = (metadata: any) => {
+    const status = metadata.enhancement_status || 'unknown';
+    const formatRequested = metadata.format_requested;
+    const formatUsed = metadata.format_used;
+
+    switch (status) {
+      case 'full':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200" title="Fully enhanced with all features">
+            ✨ Full Enhancement
+          </span>
+        );
+      case 'partial':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200" title="Enhanced with basic features">
+            🔷 Partial Enhancement
+          </span>
+        );
+      case 'fallback':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 border border-yellow-200" title={`Requested ${formatRequested} but used ${formatUsed} (pending implementation)`}>
+            ⏳ Fallback Mode
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+            ✨ Enhanced
+          </span>
+        );
+    }
+  };
+
   const downloadAsCSV = () => {
     if (showBatchView && generatedQuestions.length > 0) {
-      const csvContent = "Question,Answer,Model,Year Level,Sub Level\n" +
+      const csvContent = "Question,Answer,Model,Year Level,Sub Level,Enhancement Status,Format Used\n" +
         generatedQuestions.map(q =>
-          `"${q.question.replace(/"/g, '""')}","${q.answer}","${q.metadata.model_id}","${q.metadata.year_level}","${q.metadata.sub_level || 'N/A'}"`
+          `"${q.question.replace(/"/g, '""')}","${q.answer}","${q.metadata.model_id}","${q.metadata.year_level}","${q.metadata.sub_level || 'N/A'}","${q.metadata.enhancement_status || 'unknown'}","${q.metadata.format_used || 'unknown'}"`
         ).join('\n');
 
       const dataStr = "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent);
@@ -643,12 +676,14 @@ export default function TestPage() {
                     </button>
                     
                     <div className="text-sm text-gray-500">
-                      Model: {generatedQuestion.metadata.model_id} | 
+                      Model: {generatedQuestion.metadata.model_id} |
                       {generatedQuestion.metadata.sub_level ? (
                         <>
                           <span className="text-green-600 font-medium"> Level: {generatedQuestion.metadata.sub_level}</span>
                           {generatedQuestion.metadata.enhanced_system_used && (
-                            <span className="ml-1 text-green-600">✨ Enhanced</span>
+                            <span className="ml-1">
+                              {getEnhancementStatusBadge(generatedQuestion.metadata)}
+                            </span>
                           )}
                         </>
                       ) : (
@@ -685,7 +720,7 @@ export default function TestPage() {
                   {/* Batch Statistics */}
                   {batchMetadata && (
                     <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                         <div>
                           <span className="font-medium text-blue-900">Total Questions:</span>
                           <p className="text-blue-800">{batchMetadata.quantity}</p>
@@ -700,12 +735,13 @@ export default function TestPage() {
                         </div>
                         <div>
                           <span className="font-medium text-blue-900">Model:</span>
-                          <p className="text-blue-800">
-                            {batchMetadata.model_id}
-                            {batchMetadata.enhanced_system_used && (
-                              <span className="ml-1 text-green-600">✨</span>
-                            )}
-                          </p>
+                          <p className="text-blue-800">{batchMetadata.model_id}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-blue-900">Enhancement:</span>
+                          <div className="mt-1">
+                            {batchMetadata.enhanced_system_used && getEnhancementStatusBadge(batchMetadata)}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -739,15 +775,13 @@ export default function TestPage() {
                           </div>
                         )}
 
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 flex items-center gap-2">
                           {question.metadata.sub_level ? (
                             <span className="text-green-600 font-medium">Level: {question.metadata.sub_level}</span>
                           ) : (
                             <span>Year: {question.metadata.year_level}</span>
                           )}
-                          {question.metadata.enhanced_system_used && (
-                            <span className="ml-2 text-green-600">✨ Enhanced</span>
-                          )}
+                          {question.metadata.enhanced_system_used && getEnhancementStatusBadge(question.metadata)}
                         </div>
                       </div>
                     ))}
@@ -777,16 +811,14 @@ export default function TestPage() {
                   {questionHistory.slice(0, 5).map((q, index) => (
                     <div key={index} className="p-3 bg-gray-50 rounded-md">
                       <p className="text-sm">{q.question}</p>
-                      <div className="mt-1 text-xs text-gray-500">
-                        {q.metadata.model_id} | 
+                      <div className="mt-1 text-xs text-gray-500 flex items-center gap-2">
+                        <span>{q.metadata.model_id}</span>
                         {q.metadata.sub_level ? (
                           <span className="text-green-600 font-medium">Level {q.metadata.sub_level}</span>
                         ) : (
                           <span>Year {q.metadata.year_level}</span>
                         )}
-                        {q.metadata.enhanced_system_used && (
-                          <span className="ml-1 text-green-600">✨</span>
-                        )}
+                        {q.metadata.enhanced_system_used && getEnhancementStatusBadge(q.metadata)}
                       </div>
                     </div>
                   ))}
