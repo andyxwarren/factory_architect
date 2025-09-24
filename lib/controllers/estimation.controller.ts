@@ -113,7 +113,11 @@ export class EstimationController extends QuestionController {
         roundingPlace
       },
       solution: {
-        correctAnswer: roundedValue,
+        correctAnswer: {
+          value: roundedValue,
+          displayText: this.formatValue(roundedValue, '£'),
+          units: '£'
+        },
         distractors,
         workingSteps: this.generateRoundingSteps(exactValue, roundedValue, roundingPlace),
         explanation: `Rounding ${exactValue} to the nearest ${roundingPlace} gives ${roundedValue}`
@@ -158,7 +162,11 @@ export class EstimationController extends QuestionController {
         toleranceRange: estimationParams.toleranceRange
       },
       solution: {
-        correctAnswer: estimatedValue,
+        correctAnswer: {
+          value: estimatedValue,
+          displayText: this.formatValue(estimatedValue, '£'),
+          units: '£'
+        },
         distractors,
         workingSteps: this.generateEstimationSteps(mathOutput, estimatedValue),
         explanation: `A reasonable estimate for this calculation is approximately ${estimatedValue}`
@@ -199,7 +207,11 @@ export class EstimationController extends QuestionController {
         magnitude
       },
       solution: {
-        correctAnswer: magnitude,
+        correctAnswer: {
+          value: magnitude,
+          displayText: this.formatValue(magnitude, ''),
+          units: ''
+        },
         distractors,
         workingSteps: [`The result ${exactValue} is in the order of magnitude of ${magnitude}`],
         explanation: `The order of magnitude is ${magnitude}`
@@ -240,7 +252,11 @@ export class EstimationController extends QuestionController {
         benchmark
       },
       solution: {
-        correctAnswer: benchmark,
+        correctAnswer: {
+          value: benchmark,
+          displayText: this.formatValue(benchmark, '£'),
+          units: '£'
+        },
         distractors,
         workingSteps: [`${exactValue} is closest to the benchmark value ${benchmark}`],
         explanation: `The nearest benchmark is ${benchmark}`

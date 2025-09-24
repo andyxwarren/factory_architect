@@ -140,6 +140,9 @@ export interface QuestionDefinition {
   scenario: ScenarioContext;
   parameters: QuestionParameters;
 
+  // Enhanced question content for rich rendering
+  questionContent?: QuestionContent;
+
   // Solution
   solution: QuestionSolution;
 
@@ -287,4 +290,47 @@ export interface ScenarioCriteria {
 export interface ScoredScenario {
   scenario: ScenarioContext;
   score: number;
+}
+
+/**
+ * Enhanced question content for rich UI rendering
+ */
+export interface QuestionContent {
+  // Complete rendered text for simple display
+  fullText: string;
+
+  // Structured components for rich UI
+  components?: QuestionComponents;
+
+  // Template data for custom rendering
+  templateData?: QuestionTemplateData;
+}
+
+export interface QuestionComponents {
+  narrative?: string;           // "Sarah is shopping and needs to calculate:"
+  steps?: QuestionStep[];       // For multi-step problems
+  prompt?: string;              // "What is the final result?"
+  highlightValues?: number[];   // Values to emphasize in UI
+  operators?: string[];         // ['+', '-', '×'] for display
+  sequence?: (number | string)[];  // For ordering/pattern questions
+}
+
+export interface QuestionStep {
+  stepNumber: number;
+  text: string;
+  operation?: string;
+  values?: number[];
+  result?: number;
+  description?: string;
+}
+
+export interface QuestionTemplateData {
+  character?: string;
+  action?: string;
+  items?: string[];
+  quantities?: number[];
+  prices?: number[];
+  units?: string[];
+  context?: string;
+  theme?: string;
 }

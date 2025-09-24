@@ -66,7 +66,12 @@ class MathEngineAdapter {
   async generate(model: string, params: any): Promise<any> {
     // Use existing math engine
     const modelInstance = getModel(model as any);
-    return modelInstance.generate(params || modelInstance.getDefaultParams(4));
+
+    // Ensure params have all required properties by merging with defaults
+    const defaultParams = modelInstance.getDefaultParams(4);
+    const mergedParams = params ? { ...defaultParams, ...params } : defaultParams;
+
+    return modelInstance.generate(mergedParams);
   }
 
   getModel(modelId: string): IMathModel<any, any> {

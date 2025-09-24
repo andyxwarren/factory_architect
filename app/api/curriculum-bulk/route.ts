@@ -1,15 +1,104 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GeneratedQuestion } from '@/lib/types';
+import { GeneratedQuestion, IMathModel } from '@/lib/types';
 import { curriculumParser, CurriculumFilter } from '@/lib/curriculum/curriculum-parser';
 import { curriculumModelMapper } from '@/lib/curriculum/curriculum-model-mapping';
-import { generateMathQuestion, getModel } from '@/lib/math-engine';
-import { StoryEngine } from '@/lib/story-engine/story.engine';
-import { MoneyContextGenerator } from '@/lib/story-engine/contexts/money.context';
+import { getModel } from '@/lib/math-engine';
 import { MODEL_STATUS_REGISTRY, ModelStatus } from '@/lib/models/model-status';
+import { QuestionOrchestrator, EnhancedQuestionRequest } from '@/lib/orchestrator/question-orchestrator';
+import { ScenarioService } from '@/lib/services/scenario.service';
+import { DistractorEngine } from '@/lib/services/distractor-engine.service';
+import { QuestionFormat, ScenarioTheme } from '@/lib/types/question-formats';
 
 const ENHANCED_MODELS = ['ADDITION', 'SUBTRACTION', 'MULTIPLICATION', 'DIVISION', 'PERCENTAGE', 'FRACTION'];
 const MAX_COMBINATIONS_PER_REQUEST = 500;
 const MAX_QUESTIONS_PER_COMBINATION = 10;
+
+// Math engine adapter for orchestrator
+class MathEngineAdapter {
+  async generate(model: string, params: any): Promise<any> {
+    const modelInstance = getModel(model as any);
+
+    // Ensure params have all required properties by merging with defaults
+    const defaultParams = modelInstance.getDefaultParams(4);
+    const mergedParams = params ? { ...defaultParams, ...params } : defaultParams;
+
+    return modelInstance.generate(mergedParams);
+  }
+
+  getModel(modelId: string): IMathModel<any, any> {
+    return getModel(modelId as any);
+  }
+}
+
+// Format distribution weights based on curriculum requirements
+const FORMAT_WEIGHTS = {
+  [QuestionFormat.DIRECT_CALCULATION]: 0.30,
+  [QuestionFormat.COMPARISON]: 0.15,
+  [QuestionFormat.ESTIMATION]: 0.15,
+  [QuestionFormat.VALIDATION]: 0.10,
+  [QuestionFormat.MULTI_STEP]: 0.10,
+  [QuestionFormat.MISSING_VALUE]: 0.10,
+  [QuestionFormat.ORDERING]: 0.05,
+  [QuestionFormat.PATTERN_RECOGNITION]: 0.05
+};
+
+// Theme variety for different contexts
+const AVAILABLE_THEMES = [
+  ScenarioTheme.SHOPPING,
+  ScenarioTheme.SCHOOL,
+  ScenarioTheme.SPORTS,
+  ScenarioTheme.COOKING,
+  ScenarioTheme.POCKET_MONEY,
+  ScenarioTheme.NATURE
+];
+
+// Map curriculum substrands to appropriate formats
+function getPreferredFormats(substrand: string): QuestionFormat[] {
+  const formatMap: Record<string, QuestionFormat[]> = {
+    'estimate, use inverses and check': [QuestionFormat.ESTIMATION, QuestionFormat.VALIDATION],
+    'compare and order decimals': [QuestionFormat.COMPARISON, QuestionFormat.ORDERING],
+    'solve problems': [QuestionFormat.MULTI_STEP, QuestionFormat.MISSING_VALUE],
+    'add / subtract mentally': [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.ESTIMATION],
+    'multiply / divide mentally': [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.VALIDATION],
+    'comparing and ordering fractions': [QuestionFormat.COMPARISON, QuestionFormat.ORDERING]
+  };
+
+  return formatMap[substrand] || [QuestionFormat.DIRECT_CALCULATION];
+}
+
+// Select format based on index and preferences
+function selectFormat(
+  questionIndex: number,
+  preferredFormats: QuestionFormat[],
+  formatVariety: boolean
+): QuestionFormat {
+  if (!formatVariety) {
+    return QuestionFormat.DIRECT_CALCULATION;
+  }
+
+  if (preferredFormats.length > 0) {
+    return preferredFormats[questionIndex % preferredFormats.length];
+  }
+
+  // Use weighted random selection
+  const formats = Object.keys(FORMAT_WEIGHTS) as QuestionFormat[];
+  return formats[questionIndex % formats.length];
+}
+
+// Select theme for variety
+function selectTheme(
+  questionIndex: number,
+  preferredThemes: ScenarioTheme[],
+  themeVariety: boolean
+): ScenarioTheme {
+  if (!themeVariety) {
+    return ScenarioTheme.SHOPPING;
+  }
+
+  const themes = preferredThemes.length > 0 ? preferredThemes : AVAILABLE_THEMES;
+  return themes[questionIndex % themes.length];
+}
+
 
 interface BulkGenerationRequest {
   strands: string[];
@@ -20,6 +109,12 @@ interface BulkGenerationRequest {
   useEnhancedDifficulty?: boolean;
   contextType?: string;
   sessionId?: string;
+  // Enhanced system options
+  useEnhancedGeneration?: boolean;
+  formatVariety?: boolean;
+  themeVariety?: boolean;
+  preferredFormats?: QuestionFormat[];
+  preferredThemes?: ScenarioTheme[];
 }
 
 interface CombinationRequest {
@@ -79,7 +174,13 @@ export async function POST(req: NextRequest) {
       questionsPerCombination,
       useEnhancedDifficulty = true,
       contextType = 'money',
-      sessionId
+      sessionId,
+      // Enhanced generation options
+      useEnhancedGeneration = true,
+      formatVariety = true,
+      themeVariety = true,
+      preferredFormats = [],
+      preferredThemes = []
     } = body;
 
     // Validation
@@ -217,7 +318,12 @@ export async function POST(req: NextRequest) {
     const results: CombinationResult[] = [];
     const errors: string[] = [];
     let totalQuestions = 0;
-    const storyEngine = new StoryEngine();
+
+    // Initialize enhanced generation system (always required now)
+    const mathEngine = new MathEngineAdapter();
+    const scenarioService = new ScenarioService();
+    const distractorEngine = new DistractorEngine();
+    const orchestrator = new QuestionOrchestrator(mathEngine, scenarioService, distractorEngine);
 
     for (let i = 0; i < combinations.length; i++) {
       const combination = combinations[i];
@@ -229,54 +335,45 @@ export async function POST(req: NextRequest) {
         // Generate the specified number of questions for this combination
         for (let q = 0; q < questionsPerCombination; q++) {
           try {
-            // Determine parameters for generation
-            let actualParams: any;
-            let usedEnhancedSystem = false;
+            let generatedQuestion: GeneratedQuestion;
 
-            if (useEnhancedDifficulty && ENHANCED_MODELS.includes(combination.primaryModel)) {
-              // Use enhanced difficulty system
-              const { EnhancedDifficultySystem } = await import('@/lib/math-engine/difficulty-enhanced');
-              const subLevelObj = EnhancedDifficultySystem.createLevel(combination.year, combination.subLevel);
-              actualParams = EnhancedDifficultySystem.getSubLevelParams(combination.primaryModel, subLevelObj);
-              usedEnhancedSystem = true;
-            } else {
-              // Use traditional system
-              const model = getModel(combination.primaryModel);
-              actualParams = model.getDefaultParams(combination.year);
+            // Always use enhanced generation system
+            if (!orchestrator) {
+              throw new Error('Enhanced generation system not initialized');
             }
 
-            // Generate math output
-            const mathOutput = generateMathQuestion(
-              combination.primaryModel as any,
-              combination.year,
-              actualParams
-            );
+            // Determine preferred formats based on curriculum substrand
+            const curricularFormats = getPreferredFormats(combination.substrand);
+            const availableFormats = preferredFormats.length > 0 ? preferredFormats : curricularFormats;
 
-            // Generate context
-            let context;
-            switch (contextType) {
-              case 'money':
-                context = MoneyContextGenerator.generate(combination.primaryModel);
-                break;
-              default:
-                context = MoneyContextGenerator.generate(combination.primaryModel);
-            }
+            // Select format and theme for variety
+            const selectedFormat = selectFormat(q, availableFormats, formatVariety);
+            const selectedTheme = selectTheme(q, preferredThemes, themeVariety);
 
-            // Generate question and answer using Story Engine
-            const question = storyEngine.generateQuestion(mathOutput, context);
-            const answer = storyEngine.generateAnswer(mathOutput, context);
+            // Create enhanced question request
+            const enhancedRequest: EnhancedQuestionRequest = {
+              model_id: combination.primaryModel,
+              difficulty_level: `${combination.year}.${combination.subLevel}`,
+              format_preference: selectedFormat,
+              scenario_theme: selectedTheme,
+              pedagogical_focus: combination.substrand,
+              session_id: sessionId
+            };
 
-            const generatedQuestion: GeneratedQuestion = {
-              question,
-              answer,
-              math_output: mathOutput,
-              context,
+            const enhancedQuestion = await orchestrator.generateQuestion(enhancedRequest);
+
+            // Adapt to response format
+            generatedQuestion = {
+              question: enhancedQuestion.text,
+              answer: enhancedQuestion.options[enhancedQuestion.correctIndex].text,
+              math_output: enhancedQuestion.mathOutput,
+              context: enhancedQuestion.scenario,
               metadata: {
                 model_id: combination.primaryModel,
                 year_level: combination.year,
                 sub_level: `${combination.year}.${combination.subLevel}`,
-                difficulty_params: actualParams,
-                enhanced_system_used: usedEnhancedSystem,
+                difficulty_params: enhancedQuestion.difficulty,
+                enhanced_system_used: true,
                 session_id: sessionId,
                 timestamp: new Date()
               }
@@ -405,7 +502,12 @@ export async function GET() {
           questionsPerCombination: 'number (required) - Questions to generate per combination (1-10)',
           useEnhancedDifficulty: 'boolean (optional) - Use enhanced difficulty system where available',
           contextType: 'string (optional) - Context type for questions (default: money)',
-          sessionId: 'string (optional) - Session ID for tracking'
+          sessionId: 'string (optional) - Session ID for tracking',
+          useEnhancedGeneration: 'boolean (optional) - [DEPRECATED] Enhanced system is now always used (default: true)',
+          formatVariety: 'boolean (optional) - Enable question format variety (default: true)',
+          themeVariety: 'boolean (optional) - Enable scenario theme variety (default: true)',
+          preferredFormats: 'string[] (optional) - Preferred question formats to cycle through',
+          preferredThemes: 'string[] (optional) - Preferred scenario themes to cycle through'
         },
         example: {
           strands: ['Number and place value'],

@@ -126,7 +126,11 @@ export class OrderingController extends QuestionController {
         valuesToOrder
       },
       solution: {
-        correctAnswer: correctOrder,
+        correctAnswer: {
+          value: correctOrder,
+          displayText: correctOrder.map(index => valuesToOrder[index]).join(', '),
+          units: ''
+        },
         distractors,
         workingSteps: this.generateOrderingSteps(valuesToOrder, correctOrder, orderingParams),
         explanation: this.generateOrderingExplanation(valuesToOrder, correctOrder, orderingParams)

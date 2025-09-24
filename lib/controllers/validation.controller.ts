@@ -121,7 +121,11 @@ export class ValidationController extends QuestionController {
         statementIsTrue
       },
       solution: {
-        correctAnswer: statementIsTrue,
+        correctAnswer: {
+          value: statementIsTrue,
+          displayText: statementIsTrue ? 'True' : 'False',
+          units: ''
+        },
         distractors,
         workingSteps: this.generateTrueFalseSteps(mathOutput, presentedAnswer, correctAnswer, statementIsTrue),
         explanation: statementIsTrue
@@ -168,7 +172,11 @@ export class ValidationController extends QuestionController {
         correctAnswer
       },
       solution: {
-        correctAnswer: hasError ? 'Incorrect' : 'Correct',
+        correctAnswer: {
+          value: hasError ? 'Incorrect' : 'Correct',
+          displayText: hasError ? 'Incorrect' : 'Correct',
+          units: ''
+        },
         distractors,
         workingSteps: this.generateCheckWorkExplanation(workingSteps, hasError, correctAnswer),
         explanation: hasError
@@ -214,7 +222,11 @@ export class ValidationController extends QuestionController {
         correctAnswer
       },
       solution: {
-        correctAnswer: `Step ${errorStep + 1}`,
+        correctAnswer: {
+          value: `Step ${errorStep + 1}`,
+          displayText: `Step ${errorStep + 1}`,
+          units: ''
+        },
         distractors,
         workingSteps: [`The error is in step ${errorStep + 1}`, `Correct answer: ${correctAnswer}`],
         explanation: `The error occurs in step ${errorStep + 1}. The correct calculation gives ${correctAnswer}`

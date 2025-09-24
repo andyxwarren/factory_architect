@@ -134,7 +134,11 @@ export class MissingValueController extends QuestionController {
         missingValue: missingValueParams.missingValue
       },
       solution: {
-        correctAnswer: missingValueParams.missingValue,
+        correctAnswer: {
+          value: missingValueParams.missingValue,
+          displayText: this.formatValue(missingValueParams.missingValue, ''),
+          units: ''
+        },
         distractors,
         workingSteps: this.generateSolutionSteps(equation, missingValueParams),
         explanation: this.generateExplanation(equation, missingValueParams)
@@ -182,7 +186,11 @@ export class MissingValueController extends QuestionController {
         missingValue: missingValueParams.missingValue
       },
       solution: {
-        correctAnswer: missingValueParams.missingValue,
+        correctAnswer: {
+          value: missingValueParams.missingValue,
+          displayText: this.formatValue(missingValueParams.missingValue, ''),
+          units: ''
+        },
         distractors,
         workingSteps: this.generateBalancedSolutionSteps(equation, missingValueParams),
         explanation: this.generateBalancedExplanation(equation, missingValueParams)
@@ -229,7 +237,11 @@ export class MissingValueController extends QuestionController {
         missingValue: missingValueParams.missingValue
       },
       solution: {
-        correctAnswer: missingValueParams.missingValue,
+        correctAnswer: {
+          value: missingValueParams.missingValue,
+          displayText: this.formatValue(missingValueParams.missingValue, ''),
+          units: ''
+        },
         distractors,
         workingSteps: this.generateFunctionSolutionSteps(equation, missingValueParams),
         explanation: this.generateFunctionExplanation(equation, missingValueParams)
@@ -269,7 +281,11 @@ export class MissingValueController extends QuestionController {
         missingValue: missingValueParams.missingValue
       },
       solution: {
-        correctAnswer: missingValueParams.missingValue,
+        correctAnswer: {
+          value: missingValueParams.missingValue,
+          displayText: this.formatValue(missingValueParams.missingValue, ''),
+          units: ''
+        },
         distractors,
         workingSteps: this.generateWordSolutionSteps(equation, missingValueParams),
         explanation: this.generateWordExplanation(equation, missingValueParams)

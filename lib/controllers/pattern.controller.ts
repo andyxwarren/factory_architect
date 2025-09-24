@@ -105,7 +105,11 @@ export class PatternController extends QuestionController {
         missingValues
       },
       solution: {
-        correctAnswer: missingValues.length === 1 ? missingValues[0] : missingValues,
+        correctAnswer: {
+          value: missingValues.length === 1 ? missingValues[0] : missingValues,
+          displayText: missingValues.length === 1 ? missingValues[0].toString() : missingValues.join(', '),
+          units: ''
+        },
         distractors,
         workingSteps: this.generatePatternSteps(fullSequence, patternParams),
         explanation: this.generatePatternExplanation(patternParams, missingValues)

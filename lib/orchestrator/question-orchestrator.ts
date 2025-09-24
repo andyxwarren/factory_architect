@@ -19,13 +19,14 @@ import { PatternController } from '@/lib/controllers/pattern.controller';
 import {
   QuestionDefinition,
   QuestionFormat,
+  QuestionContent,
   ScenarioTheme,
   SubDifficultyLevel,
   FormatCompatibilityRule
 } from '@/lib/types/question-formats';
 
 // Import existing types for compatibility
-import type { IMathModel } from '@/lib/types';
+// Note: IMathModel import removed as it was unused
 
 /**
  * Request structure for enhanced question generation
@@ -63,6 +64,9 @@ export interface EnhancedQuestion {
   text: string;
   options: QuestionOption[];
   correctIndex: number;
+
+  // Enhanced structured content for rich UI rendering
+  questionContent?: QuestionContent;
 
   // Enhanced metadata
   format: QuestionFormat;
@@ -342,6 +346,7 @@ export class QuestionOrchestrator {
       text: rendered.questionText,
       options: rendered.options,
       correctIndex: rendered.correctIndex,
+      questionContent: definition.questionContent,
       format: definition.format,
       difficulty: definition.difficulty,
       cognitiveLoad: definition.difficulty.cognitiveLoad,
@@ -653,7 +658,12 @@ export class QuestionRenderer {
   }
 
   private renderQuestionText(definition: QuestionDefinition): string {
-    // Use scenario templates if available
+    // Priority 1: Use pre-generated questionContent if available
+    if (definition.questionContent?.fullText) {
+      return definition.questionContent.fullText;
+    }
+
+    // Priority 2: Use scenario templates if available
     const template = definition.scenario.templates.find(t =>
       t.formatCompatibility.includes(definition.format)
     );
@@ -662,7 +672,7 @@ export class QuestionRenderer {
       return this.fillTemplate(template.template, definition);
     }
 
-    // Fallback to basic rendering
+    // Priority 3: Fallback to basic rendering
     return this.generateBasicQuestion(definition);
   }
 

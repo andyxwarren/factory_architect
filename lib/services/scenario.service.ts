@@ -601,6 +601,155 @@ export class ScenarioService {
     };
 
     this.scenarios.set(bookFairScenario.id, bookFairScenario);
+
+    // Add realistic general shopping scenario
+    this.addRealisticShoppingScenario();
+  }
+
+  /**
+   * Add realistic shopping scenario with proper pricing constraints
+   */
+  private addRealisticShoppingScenario(): void {
+    // Define realistic price ranges for common items by year level
+    const realisticPrices: Record<string, { min: number, max: number, typical: number }> = {
+      // Food items
+      'apple': { min: 0.20, max: 0.50, typical: 0.35 },
+      'banana': { min: 0.15, max: 0.40, typical: 0.25 },
+      'sandwich': { min: 2.50, max: 6.00, typical: 4.00 },
+      'drink': { min: 0.80, max: 2.50, typical: 1.50 },
+      'cake': { min: 1.50, max: 4.00, typical: 2.50 },
+      'biscuit': { min: 0.80, max: 2.00, typical: 1.20 },
+      'sweet': { min: 0.10, max: 1.00, typical: 0.50 },
+      'chocolate': { min: 0.60, max: 3.00, typical: 1.50 },
+
+      // School supplies
+      'pen': { min: 0.50, max: 2.00, typical: 1.00 },
+      'pencil': { min: 0.20, max: 1.00, typical: 0.50 },
+      'ruler': { min: 0.80, max: 2.50, typical: 1.50 },
+      'notebook': { min: 1.00, max: 4.00, typical: 2.00 },
+      'eraser': { min: 0.30, max: 1.50, typical: 0.75 },
+
+      // Entertainment items
+      'book': { min: 3.00, max: 15.00, typical: 8.00 },
+      'comic': { min: 2.00, max: 5.00, typical: 3.00 },
+      'magazine': { min: 2.50, max: 6.00, typical: 4.00 },
+      'toy': { min: 5.00, max: 25.00, typical: 12.00 },
+      'game': { min: 8.00, max: 60.00, typical: 25.00 },
+      'puzzle': { min: 5.00, max: 20.00, typical: 12.00 },
+
+      // Small items
+      'sticker': { min: 0.20, max: 2.00, typical: 0.80 },
+      'badge': { min: 0.50, max: 3.00, typical: 1.50 },
+      'poster': { min: 2.00, max: 8.00, typical: 4.00 },
+      'card': { min: 0.50, max: 4.00, typical: 2.00 }
+    };
+
+    // Create items with realistic pricing
+    const items = Object.entries(realisticPrices).map(([name, pricing]) => ({
+      name,
+      category: this.getCategoryForItem(name),
+      typicalValue: {
+        min: pricing.min,
+        max: pricing.max,
+        typical: pricing.typical,
+        distribution: 'normal' as const
+      },
+      unit: '£',
+      attributes: { quality: 'standard' as const }
+    }));
+
+    const realisticShoppingScenario: ScenarioContext = {
+      id: 'shop-002-realistic-general',
+      theme: ScenarioTheme.SHOPPING,
+      setting: {
+        location: 'local shop',
+        timeContext: 'after school',
+        atmosphere: 'friendly'
+      },
+      characters: [
+        { name: 'placeholder', role: 'student' }
+      ],
+      items,
+      culturalElements: [
+        { type: 'currency', value: '£', explanation: 'British pounds' },
+        { type: 'location', value: 'UK local shop', explanation: 'Typical British corner shop' }
+      ],
+      realWorldConnection: 'Everyday shopping with realistic UK prices',
+      yearAppropriate: [1, 2, 3, 4, 5, 6],
+      templates: [
+        {
+          formatCompatibility: [
+            QuestionFormat.DIRECT_CALCULATION,
+            QuestionFormat.COMPARISON,
+            QuestionFormat.ESTIMATION,
+            QuestionFormat.MULTI_STEP
+          ],
+          template: '{character} goes to the shop and buys {items}. How much does {character} spend in total?',
+          answerTemplate: '{character} spends {result} in total',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'items', type: 'item_list' },
+            { key: 'result', type: 'value' }
+          ]
+        },
+        {
+          formatCompatibility: [QuestionFormat.ESTIMATION],
+          template: 'Estimate: If {character} buys {items}, about how much will it cost?',
+          answerTemplate: 'It will cost approximately {result}',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'items', type: 'item_list' },
+            { key: 'result', type: 'value' }
+          ]
+        },
+        {
+          formatCompatibility: [QuestionFormat.VALIDATION],
+          template: '{character} calculated that {items} costs {amount}. Is this correct?',
+          answerTemplate: '{validation_result}',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'items', type: 'item_list' },
+            { key: 'amount', type: 'value' },
+            { key: 'validation_result', type: 'boolean' }
+          ]
+        }
+      ]
+    };
+
+    this.scenarios.set(realisticShoppingScenario.id, realisticShoppingScenario);
+  }
+
+  /**
+   * Get appropriate category for an item
+   */
+  private getCategoryForItem(item: string): ItemCategory {
+    const categoryMap: Record<string, ItemCategory> = {
+      'apple': ItemCategory.FOOD_DRINK,
+      'banana': ItemCategory.FOOD_DRINK,
+      'sandwich': ItemCategory.FOOD_DRINK,
+      'drink': ItemCategory.FOOD_DRINK,
+      'cake': ItemCategory.FOOD_DRINK,
+      'biscuit': ItemCategory.FOOD_DRINK,
+      'sweet': ItemCategory.FOOD_DRINK,
+      'chocolate': ItemCategory.FOOD_DRINK,
+      'pen': ItemCategory.SCHOOL_SUPPLIES,
+      'pencil': ItemCategory.SCHOOL_SUPPLIES,
+      'ruler': ItemCategory.SCHOOL_SUPPLIES,
+      'notebook': ItemCategory.SCHOOL_SUPPLIES,
+      'eraser': ItemCategory.SCHOOL_SUPPLIES,
+      'book': ItemCategory.BOOKS_MEDIA,
+      'comic': ItemCategory.BOOKS_MEDIA,
+      'magazine': ItemCategory.BOOKS_MEDIA,
+      'toy': ItemCategory.TOYS_GAMES,
+      'game': ItemCategory.TOYS_GAMES,
+      'puzzle': ItemCategory.TOYS_GAMES,
+      'sticker': ItemCategory.TOYS_GAMES,
+      'badge': ItemCategory.TOYS_GAMES,
+      'poster': ItemCategory.BOOKS_MEDIA,
+      'card': ItemCategory.BOOKS_MEDIA
+    };
+
+    return categoryMap[item] || ItemCategory.HOUSEHOLD_ITEMS;
   }
 
   /**

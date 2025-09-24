@@ -10,7 +10,11 @@ import {
   QuestionDefinition,
   QuestionFormat,
   DistractorStrategy,
-  ScenarioTheme
+  ScenarioTheme,
+  QuestionContent,
+  QuestionComponents,
+  QuestionStep,
+  QuestionTemplateData
 } from '@/lib/types/question-formats';
 
 /**
@@ -107,6 +111,9 @@ export class MultiStepController extends QuestionController {
     // Create the multi-step story problem
     const questionText = this.generateMultiStepQuestionText(scenario, stepCalculations, multiStepParams);
 
+    // Create structured question content for rich UI
+    const questionContent = this.createQuestionContent(questionText, stepCalculations, scenario, multiStepParams);
+
     // Final answer and working
     const finalAnswer = stepCalculations[stepCalculations.length - 1].result;
 
@@ -115,6 +122,7 @@ export class MultiStepController extends QuestionController {
 
     return {
       ...baseDefinition,
+      questionContent,
       parameters: {
         mathValues: finalMathOutput,
         multiStepParams,
@@ -122,7 +130,11 @@ export class MultiStepController extends QuestionController {
         finalAnswer
       },
       solution: {
-        correctAnswer: finalAnswer,
+        correctAnswer: {
+          value: finalAnswer,
+          displayText: this.formatValue(finalAnswer, '£'),
+          units: '£'
+        },
         distractors,
         workingSteps: this.generateWorkingSteps(stepCalculations, multiStepParams),
         explanation: this.generateStepByStepExplanation(stepCalculations, multiStepParams)
@@ -201,142 +213,263 @@ export class MultiStepController extends QuestionController {
     const calculations = [];
 
     // Work backwards from final result to create logical sequence
-    const finalResult = finalOutput.result || finalOutput.answer || finalOutput.value;
+    const targetFinalResult = finalOutput.result || finalOutput.answer || finalOutput.value;
 
-    // For simplicity, create forward sequence
-    // Step 1: Initial operation
-    const step1 = this.generateInitialStep(multiStepParams.operations[0], finalResult);
+    // Generate a coherent sequence that leads to a reasonable final result
+    // Start with a manageable initial value
+    let currentValue = this.generateReasonableStartValue(targetFinalResult, multiStepParams);
+
+    // Step 1: Initial calculation
+    const step1 = this.generateReasonableInitialStep(multiStepParams.operations[0], currentValue);
     calculations.push(step1);
+    currentValue = step1.result;
 
-    // Subsequent steps
+    // Subsequent steps - each uses the previous result
     for (let i = 1; i < multiStepParams.stepCount; i++) {
-      const prevResult = calculations[i - 1].result;
-      const nextStep = this.generateNextStep(multiStepParams.operations[i], prevResult, i, finalResult);
+      const nextStep = this.generateLogicalNextStep(
+        multiStepParams.operations[i],
+        currentValue,
+        i,
+        targetFinalResult,
+        multiStepParams.stepCount
+      );
       calculations.push(nextStep);
+      currentValue = nextStep.result;
     }
 
     return calculations;
   }
 
   /**
-   * Generate initial step calculation
+   * Generate reasonable start value for multi-step sequence
    */
-  private generateInitialStep(operation: string, targetFinalResult: number): any {
-    // Generate operands that will lead toward target
-    const baseValue = Math.floor(targetFinalResult / 3); // Rough starting point
+  private generateReasonableStartValue(targetFinalResult: number, multiStepParams: MultiStepParams): number {
+    // Choose a starting value that's reasonable for the sequence
+    const minStart = Math.max(1, Math.floor(targetFinalResult / 10));
+    const maxStart = Math.max(10, Math.floor(targetFinalResult / 2));
+    return Math.floor(Math.random() * (maxStart - minStart + 1)) + minStart;
+  }
 
+  /**
+   * Generate reasonable initial step calculation
+   */
+  private generateReasonableInitialStep(operation: string, startValue: number): any {
     switch (operation) {
       case 'ADDITION':
-        const add1 = Math.floor(baseValue * 0.4) + Math.floor(Math.random() * 10);
-        const add2 = Math.floor(baseValue * 0.6) + Math.floor(Math.random() * 10);
+        const add2 = Math.floor(Math.random() * startValue) + 1;
         return {
           operation: 'ADDITION',
-          operand_1: add1,
+          operand_1: startValue,
           operand_2: add2,
-          result: add1 + add2,
-          description: `Add ${add1} and ${add2}`
+          result: startValue + add2,
+          description: `Add ${startValue} and ${add2}`
         };
 
       case 'SUBTRACTION':
-        const sub1 = Math.floor(baseValue * 1.5) + Math.floor(Math.random() * 20);
-        const sub2 = Math.floor(baseValue * 0.5) + Math.floor(Math.random() * 10);
+        const sub2 = Math.floor(Math.random() * Math.floor(startValue / 2)) + 1;
         return {
           operation: 'SUBTRACTION',
-          operand_1: sub1,
+          operand_1: startValue,
           operand_2: sub2,
-          result: sub1 - sub2,
-          description: `Subtract ${sub2} from ${sub1}`
+          result: startValue - sub2,
+          description: `Subtract ${sub2} from ${startValue}`
         };
 
       case 'MULTIPLICATION':
-        const mult1 = Math.floor(Math.sqrt(baseValue)) + Math.floor(Math.random() * 5);
-        const mult2 = Math.floor(baseValue / mult1) + Math.floor(Math.random() * 3);
+        const mult2 = Math.floor(Math.random() * 4) + 2; // 2-5
         return {
           operation: 'MULTIPLICATION',
-          operand_1: mult1,
+          operand_1: startValue,
           operand_2: mult2,
-          result: mult1 * mult2,
-          description: `Multiply ${mult1} by ${mult2}`
+          result: startValue * mult2,
+          description: `Multiply ${startValue} by ${mult2}`
         };
 
       case 'DIVISION':
-        const div2 = Math.floor(Math.random() * 8) + 2;
-        const div1 = baseValue * div2;
+        // Ensure clean division
+        const div2 = Math.floor(Math.random() * 4) + 2; // 2-5
+        const dividend = startValue * div2; // Make sure it divides evenly
         return {
           operation: 'DIVISION',
-          operand_1: div1,
+          operand_1: dividend,
           operand_2: div2,
-          result: div1 / div2,
-          description: `Divide ${div1} by ${div2}`
+          result: startValue, // Result is the original startValue
+          description: `Divide ${dividend} by ${div2}`
         };
 
       default:
         return {
           operation: 'ADDITION',
-          operand_1: 10,
+          operand_1: startValue,
           operand_2: 5,
-          result: 15,
-          description: 'Add 10 and 5'
+          result: startValue + 5,
+          description: `Add ${startValue} and 5`
         };
     }
   }
 
   /**
-   * Generate next step in sequence
+   * Generate next step in logical sequence
    */
-  private generateNextStep(operation: string, previousResult: number, stepIndex: number, targetFinal: number): any {
-    // Generate operation that uses previous result
-    const modifier = Math.floor(Math.random() * 20) + 1;
+  private generateLogicalNextStep(
+    operation: string,
+    previousResult: number,
+    stepIndex: number,
+    targetFinal: number,
+    totalSteps: number
+  ): any {
+    // Use reasonable modifiers that won't create extremely large or small values
+    const isLastStep = stepIndex === totalSteps - 1;
 
     switch (operation) {
       case 'ADDITION':
+        // Use smaller additions for later steps to avoid huge results
+        const addModifier = Math.floor(Math.random() * Math.max(5, Math.floor(previousResult / 4))) + 1;
         return {
           operation: 'ADDITION',
           operand_1: previousResult,
-          operand_2: modifier,
-          result: previousResult + modifier,
-          description: `Add ${modifier} to the previous result`
+          operand_2: addModifier,
+          result: previousResult + addModifier,
+          description: `Add ${addModifier} to ${previousResult}`
         };
 
       case 'SUBTRACTION':
+        // Ensure we don't go negative and use reasonable amounts
+        const maxSubtract = Math.min(Math.floor(previousResult * 0.7), 20);
+        const subModifier = Math.floor(Math.random() * Math.max(1, maxSubtract)) + 1;
         return {
           operation: 'SUBTRACTION',
           operand_1: previousResult,
-          operand_2: modifier,
-          result: previousResult - modifier,
-          description: `Subtract ${modifier} from the previous result`
+          operand_2: subModifier,
+          result: Math.max(1, previousResult - subModifier),
+          description: `Subtract ${subModifier} from ${previousResult}`
         };
 
       case 'MULTIPLICATION':
-        const smallMultiplier = Math.floor(Math.random() * 4) + 2;
+        // Use small multipliers to avoid huge numbers
+        const multiplier = isLastStep ? 2 : Math.floor(Math.random() * 3) + 2; // 2-4
         return {
           operation: 'MULTIPLICATION',
           operand_1: previousResult,
-          operand_2: smallMultiplier,
-          result: previousResult * smallMultiplier,
-          description: `Multiply the previous result by ${smallMultiplier}`
+          operand_2: multiplier,
+          result: previousResult * multiplier,
+          description: `Multiply ${previousResult} by ${multiplier}`
         };
 
       case 'DIVISION':
-        const divisor = Math.floor(Math.random() * 4) + 2;
-        // Ensure clean division
-        const dividend = Math.floor(previousResult / divisor) * divisor;
+        // Ensure clean division by finding factors of previousResult
+        const divisor = this.findReasonableDivisor(previousResult);
         return {
           operation: 'DIVISION',
-          operand_1: dividend,
+          operand_1: previousResult,
           operand_2: divisor,
-          result: dividend / divisor,
-          description: `Divide ${dividend} by ${divisor}`
+          result: Math.floor(previousResult / divisor),
+          description: `Divide ${previousResult} by ${divisor}`
         };
 
       default:
         return {
           operation: 'ADDITION',
           operand_1: previousResult,
-          operand_2: 10,
-          result: previousResult + 10,
-          description: 'Add 10 to the previous result'
+          operand_2: 5,
+          result: previousResult + 5,
+          description: `Add 5 to ${previousResult}`
         };
+    }
+  }
+
+  /**
+   * Find a reasonable divisor for clean division
+   */
+  private findReasonableDivisor(value: number): number {
+    // Find factors of the value, prefer smaller ones
+    const factors = [];
+    for (let i = 2; i <= Math.min(10, Math.floor(value / 2)); i++) {
+      if (value % i === 0) {
+        factors.push(i);
+      }
+    }
+
+    // If no good factors found, use a small number that gives a reasonable result
+    if (factors.length === 0) {
+      // Find a divisor that gives a reasonable quotient (not too small)
+      for (let i = 2; i <= 5; i++) {
+        if (Math.floor(value / i) >= 1) {
+          return i;
+        }
+      }
+      return 2; // Fallback
+    }
+
+    // Return a random factor, preferring smaller ones
+    return factors[Math.floor(Math.random() * Math.min(factors.length, 3))];
+  }
+
+  /**
+   * Create structured question content for rich UI rendering
+   */
+  private createQuestionContent(
+    questionText: string,
+    stepCalculations: any[],
+    scenario: any,
+    multiStepParams: MultiStepParams
+  ): QuestionContent {
+    const character = scenario.characters[0]?.name || 'A student';
+    const setting = scenario.setting?.location || 'problem';
+
+    // Extract all intermediate values and final result for highlighting
+    const highlightValues: number[] = [];
+    stepCalculations.forEach(calc => {
+      if (calc.operand_1) highlightValues.push(calc.operand_1);
+      if (calc.operand_2) highlightValues.push(calc.operand_2);
+      if (calc.result) highlightValues.push(calc.result);
+    });
+
+    // Create structured steps
+    const steps: QuestionStep[] = stepCalculations.map((calc, index) => ({
+      stepNumber: index + 1,
+      text: calc.description || `Step ${index + 1}`,
+      operation: calc.operation,
+      values: [calc.operand_1, calc.operand_2].filter(v => v !== undefined),
+      result: calc.result,
+      description: calc.description
+    }));
+
+    // Extract operators used
+    const operators = [...new Set(stepCalculations.map(calc =>
+      this.operationToSymbol(calc.operation)
+    ).filter(Boolean))];
+
+    return {
+      fullText: questionText,
+      components: {
+        narrative: `${character} needs to solve this step by step:`,
+        steps,
+        prompt: "What is the final result?",
+        highlightValues,
+        operators
+      },
+      templateData: {
+        character,
+        context: setting,
+        theme: scenario.theme,
+        quantities: stepCalculations.map(calc => calc.operand_1).filter(Boolean),
+        prices: stepCalculations.map(calc => calc.operand_2).filter(Boolean),
+        action: 'calculating step by step'
+      }
+    };
+  }
+
+  /**
+   * Convert operation string to symbol
+   */
+  private operationToSymbol(operation: string): string {
+    switch (operation) {
+      case 'ADDITION': return '+';
+      case 'SUBTRACTION': return '-';
+      case 'MULTIPLICATION': return '×';
+      case 'DIVISION': return '÷';
+      default: return '';
     }
   }
 
