@@ -1,216 +1,185 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+/**
+ * Utility functions for the Factory Architect application
+ */
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+/**
+ * Simple class name utility (fallback without external dependencies)
+ */
+export function cn(...classes: (string | undefined)[]): string {
+  return classes.filter(Boolean).join(' ')
 }
 
-// Number formatting utilities
-export function formatDecimal(value: number, places: number): string {
-  return value.toFixed(places);
+/**
+ * Generate random number between min and max (inclusive)
+ */
+export function generateRandomNumber(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-export function formatCurrency(value: number): string {
-  return formatDecimal(value, 2);
-}
-
-// Random number generation utilities
-export function randomInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-export function randomFloat(min: number, max: number, decimalPlaces: number): number {
-  const factor = Math.pow(10, decimalPlaces);
-  return Math.round((Math.random() * (max - min) + min) * factor) / factor;
-}
-
+/**
+ * Choose a random element from an array
+ */
 export function randomChoice<T>(array: T[]): T {
-  return array[Math.floor(Math.random() * array.length)];
+  return array[Math.floor(Math.random() * array.length)]
 }
 
-export function randomSample<T>(array: T[], count: number): T[] {
-  const shuffled = [...array].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
+/**
+ * Choose multiple random elements from an array without replacement
+ */
+export function randomChoices<T>(array: T[], count: number): T[] {
+  const shuffled = [...array].sort(() => 0.5 - Math.random())
+  return shuffled.slice(0, Math.min(count, array.length))
 }
 
-// Generate random numbers with constraints
-export function generateRandomNumber(
-  max: number,
-  decimalPlaces: number = 0,
-  min: number = 0,
-  step: number = 1
-): number {
-  if (decimalPlaces === 0) {
-    const steps = Math.floor((max - min) / step);
-    return min + randomInt(0, steps) * step;
+/**
+ * Round number to specified decimal places
+ */
+export function roundToDecimal(num: number, decimals: number): number {
+  return Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals)
+}
+
+/**
+ * Format number as currency (UK pounds)
+ */
+export function formatCurrency(value: number): string {
+  if (value >= 1) {
+    return `£${value.toFixed(2)}`
   } else {
-    let value = randomFloat(min, max, decimalPlaces);
-    // Round to nearest step
-    if (step !== 1) {
-      value = Math.round(value / step) * step;
-    }
-    return parseFloat(value.toFixed(decimalPlaces));
+    return `${Math.round(value * 100)}p`
   }
 }
 
-// Generate array of random numbers
-export function generateRandomNumbers(
-  count: number,
-  max: number,
-  decimalPlaces: number = 0,
-  min: number = 0,
-  step: number = 1
-): number[] {
-  const numbers: number[] = [];
-  for (let i = 0; i < count; i++) {
-    numbers.push(generateRandomNumber(max, decimalPlaces, min, step));
-  }
-  return numbers;
+/**
+ * Generate a random integer within a range with optional step
+ */
+export function randomInt(min: number, max: number, step: number = 1): number {
+  const range = Math.floor((max - min) / step) + 1
+  return min + Math.floor(Math.random() * range) * step
 }
 
-// Check if carrying is required for addition
-export function requiresCarrying(operands: number[]): boolean {
-  let carry = 0;
-  const maxLength = Math.max(...operands.map(n => n.toString().length));
-  
-  for (let position = 0; position < maxLength; position++) {
-    let sum = carry;
-    for (const operand of operands) {
-      const digit = Math.floor((operand / Math.pow(10, position)) % 10);
-      sum += digit;
-    }
+/**
+ * Clamp a number between min and max values
+ */
+export function clamp(num: number, min: number, max: number): number {
+  return Math.min(Math.max(num, min), max)
+}
+
+/**
+ * Check if a number is within a range (inclusive)
+ */
+export function isInRange(num: number, min: number, max: number): boolean {
+  return num >= min && num <= max
+}
+
+/**
+ * Generate an array of numbers in a range
+ */
+export function range(start: number, end: number, step: number = 1): number[] {
+  const result: number[] = []
+  for (let i = start; i <= end; i += step) {
+    result.push(i)
+  }
+  return result
+}
+
+/**
+ * Shuffle an array using Fisher-Yates algorithm
+ */
+export function shuffle<T>(array: T[]): T[] {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
+/**
+ * Check if addition requires carrying
+ */
+export function requiresCarrying(a: number, b: number): boolean {
+  const aStr = a.toString()
+  const bStr = b.toString()
+  const maxLen = Math.max(aStr.length, bStr.length)
+
+  let carry = 0
+  for (let i = 0; i < maxLen; i++) {
+    const digitA = parseInt(aStr[aStr.length - 1 - i] || '0')
+    const digitB = parseInt(bStr[bStr.length - 1 - i] || '0')
+    const sum = digitA + digitB + carry
+
     if (sum >= 10) {
-      return true;
-    }
-    carry = Math.floor(sum / 10);
-  }
-  return false;
-}
-
-// Check if borrowing is required for subtraction
-export function requiresBorrowing(minuend: number, subtrahend: number): boolean {
-  const minStr = minuend.toString().replace('.', '');
-  const subStr = subtrahend.toString().replace('.', '');
-  const maxLength = Math.max(minStr.length, subStr.length);
-  
-  for (let i = 0; i < maxLength; i++) {
-    const minDigit = parseInt(minStr[minStr.length - 1 - i] || '0');
-    const subDigit = parseInt(subStr[subStr.length - 1 - i] || '0');
-    if (minDigit < subDigit) {
-      return true;
+      carry = 1
+      return true
+    } else {
+      carry = 0
     }
   }
-  return false;
+
+  return false
 }
 
-// Ensure unique values in array
-export function ensureUnique(generator: () => number, count: number, maxAttempts: number = 100): number[] {
-  const values = new Set<number>();
-  let attempts = 0;
-  
-  while (values.size < count && attempts < maxAttempts) {
-    values.add(generator());
-    attempts++;
+/**
+ * Check if subtraction requires borrowing
+ */
+export function requiresBorrowing(a: number, b: number): boolean {
+  const aStr = a.toString()
+  const bStr = b.toString()
+  const maxLen = Math.max(aStr.length, bStr.length)
+
+  for (let i = 0; i < maxLen; i++) {
+    const digitA = parseInt(aStr[aStr.length - 1 - i] || '0')
+    const digitB = parseInt(bStr[bStr.length - 1 - i] || '0')
+
+    if (digitA < digitB) {
+      return true
+    }
   }
-  
-  if (values.size < count) {
-    throw new Error(`Could not generate ${count} unique values`);
-  }
-  
-  return Array.from(values);
+
+  return false
 }
 
-// Name generation for story contexts
-export const PERSON_NAMES = [
-  "Sarah", "Tom", "Emma", "James", "Sophie", "Oliver", "Lucy", "Harry",
-  "Grace", "Jack", "Lily", "William", "Emily", "Daniel", "Mia", "Alex",
-  "Chloe", "Ben", "Katie", "Sam", "Amy", "Luke", "Hannah", "Ryan"
-];
+/**
+ * Format decimal number with specified precision
+ */
+export function formatDecimal(num: number, decimals: number = 2): string {
+  return num.toFixed(decimals).replace(/\.?0+$/, '')
+}
 
+/**
+ * Ensure array contains unique values only
+ */
+export function ensureUnique<T>(array: T[]): T[] {
+  return [...new Set(array)]
+}
+
+/**
+ * Get random name for story contexts
+ */
 export function getRandomName(): string {
-  return randomChoice(PERSON_NAMES);
+  const names = [
+    'Alice', 'Bob', 'Charlie', 'Diana', 'Emma', 'Frank', 'Grace', 'Henry',
+    'Ivy', 'Jack', 'Kate', 'Liam', 'Maya', 'Noah', 'Olivia', 'Peter',
+    'Quinn', 'Ruby', 'Sam', 'Tara', 'Uma', 'Victor', 'Wendy', 'Xander',
+    'Yara', 'Zoe'
+  ]
+  return randomChoice(names)
 }
 
-// Common item descriptors for different contexts
+/**
+ * Money items for story contexts
+ */
 export const MONEY_ITEMS = [
-  "book", "pen", "pencil", "ruler", "notebook", "eraser", "comic", "magazine",
-  "toy", "game", "puzzle", "sticker", "badge", "poster", "card", "sweet",
-  "chocolate", "apple", "banana", "sandwich", "drink", "cake", "biscuit"
-];
-
-export const LENGTH_ITEMS = [
-  "rope", "ribbon", "string", "wire", "fabric", "paper", "wood", "metal",
-  "road", "path", "track", "fence", "wall", "garden", "field", "playground"
-];
-
-export const WEIGHT_ITEMS = [
-  "flour", "sugar", "rice", "pasta", "potatoes", "apples", "oranges", "bananas",
-  "cheese", "butter", "meat", "fish", "vegetables", "fruit", "sand", "stones"
-];
-
-// Validation utilities
-export function validateDifficultyParams(params: any, model_id: string): boolean {
-  if (!params || typeof params !== 'object') {
-    return false;
-  }
-  
-  // Basic validation - could be extended per model
-  switch (model_id) {
-    case 'ADDITION':
-      return params.operand_count >= 2 && params.operand_count <= 10 &&
-             params.max_value > 0 && params.decimal_places >= 0 && params.decimal_places <= 3;
-    case 'SUBTRACTION':
-      return params.minuend_max > 0 && params.subtrahend_max > 0 &&
-             params.decimal_places >= 0 && params.decimal_places <= 3;
-    case 'MULTIPLICATION':
-      return params.multiplicand_max > 0 && params.multiplier_max > 0 &&
-             params.decimal_places >= 0 && params.decimal_places <= 3;
-    case 'DIVISION':
-      return params.dividend_max > 0 && params.divisor_max > 0 &&
-             params.decimal_places >= 0 && params.decimal_places <= 3;
-    default:
-      return true;
-  }
-}
-
-// Question uniqueness check
-export function isQuestionUnique(
-  newQuestion: string,
-  existingQuestions: string[],
-  threshold: number = 0.9
-): boolean {
-  // Simple check - could be enhanced with better similarity algorithms
-  return !existingQuestions.includes(newQuestion);
-}
-
-// Performance timing utility
-export function measureTime<T>(fn: () => T): [T, number] {
-  const start = performance.now();
-  const result = fn();
-  const end = performance.now();
-  return [result, end - start];
-}
-
-// Statistics calculation
-export function calculateStatistics(values: number[]): {
-  min: number;
-  max: number;
-  mean: number;
-  median: number;
-} {
-  if (values.length === 0) {
-    return { min: 0, max: 0, mean: 0, median: 0 };
-  }
-  
-  const sorted = [...values].sort((a, b) => a - b);
-  const sum = values.reduce((a, b) => a + b, 0);
-  
-  return {
-    min: sorted[0],
-    max: sorted[sorted.length - 1],
-    mean: sum / values.length,
-    median: sorted.length % 2 === 0
-      ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
-      : sorted[Math.floor(sorted.length / 2)]
-  };
-}
+  { name: 'apple', price: 0.45 },
+  { name: 'banana', price: 0.32 },
+  { name: 'orange', price: 0.58 },
+  { name: 'sandwich', price: 2.45 },
+  { name: 'drink', price: 1.25 },
+  { name: 'chocolate bar', price: 0.85 },
+  { name: 'magazine', price: 3.50 },
+  { name: 'pencil', price: 0.75 },
+  { name: 'notebook', price: 1.95 },
+  { name: 'sticker pack', price: 1.20 },
+  { name: 'toy car', price: 4.99 },
+  { name: 'book', price: 7.99 }
+]

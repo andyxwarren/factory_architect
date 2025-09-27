@@ -110,14 +110,10 @@ export async function POST(req: NextRequest) {
           sub_level: enhancedQuestion.difficulty.displayName,
           difficulty_params,
           enhanced_system_used: true,
-          enhancement_status: enhancedQuestion.enhancementStatus.level,
-          format_requested: enhancedQuestion.enhancementStatus.requestedFormat,
-          format_used: enhancedQuestion.enhancementStatus.actualFormat,
-          features_active: enhancedQuestion.enhancementStatus.featuresActive,
-          features_pending: enhancedQuestion.enhancementStatus.featuresPending,
           session_id,
           timestamp: new Date()
-        }
+        },
+        generation_setup: enhancedQuestion.generationSetup
       };
 
       return NextResponse.json(legacyQuestion);
@@ -152,14 +148,10 @@ export async function POST(req: NextRequest) {
           sub_level: eq.difficulty.displayName,
           difficulty_params,
           enhanced_system_used: true,
-          enhancement_status: eq.enhancementStatus.level,
-          format_requested: eq.enhancementStatus.requestedFormat,
-          format_used: eq.enhancementStatus.actualFormat,
-          features_active: eq.enhancementStatus.featuresActive,
-          features_pending: eq.enhancementStatus.featuresPending,
           session_id,
           timestamp: new Date()
-        }
+        },
+        generation_setup: eq.generationSetup
       }));
 
       const response = {

@@ -78,12 +78,14 @@ export abstract class QuestionController {
   protected async selectScenario(
     format: QuestionFormat,
     yearLevel: number,
-    theme?: ScenarioTheme
+    theme?: ScenarioTheme,
+    mathModel?: string
   ): Promise<ScenarioContext> {
     return this.scenarioService.selectScenario({
       format,
       yearLevel,
       theme,
+      mathModel,
       culturalContext: 'UK'
     });
   }

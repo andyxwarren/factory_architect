@@ -25,14 +25,17 @@ export class ScenarioService {
   private themeIndex: Map<ScenarioTheme, string[]>;
   private recentlyUsed: Set<string>;
   private recentlyUsedMaxSize = 20;
+  private modelThemeCompatibility: Map<string, ScenarioTheme[]>;
 
   constructor() {
     this.scenarios = new Map();
     this.themeIndex = new Map();
     this.recentlyUsed = new Set();
+    this.modelThemeCompatibility = new Map();
 
     this.initializeScenarios();
     this.buildThemeIndex();
+    this.initializeModelThemeCompatibility();
   }
 
   /**
@@ -45,12 +48,31 @@ export class ScenarioService {
     // 2. Filter by year appropriateness
     candidates = this.filterByYear(candidates, criteria.yearLevel);
 
-    // 3. Filter by theme if specified
+    // 3. Filter by model-theme compatibility
+    if (criteria.mathModel && !criteria.theme) {
+      // If no theme is specified but we have a model, get compatible themes
+      const compatibleThemes = this.modelThemeCompatibility.get(criteria.mathModel);
+      if (compatibleThemes && compatibleThemes.length > 0) {
+        candidates = candidates.filter(scenario =>
+          compatibleThemes.includes(scenario.theme)
+        );
+      }
+    }
+
+    // 4. Filter by theme if specified
     if (criteria.theme) {
+      // Check if specified theme is compatible with the model
+      if (criteria.mathModel) {
+        const compatibleThemes = this.modelThemeCompatibility.get(criteria.mathModel);
+        if (compatibleThemes && !compatibleThemes.includes(criteria.theme)) {
+          console.warn(`Theme ${criteria.theme} is not compatible with model ${criteria.mathModel}. Available themes:`, compatibleThemes);
+          // Allow override but log warning
+        }
+      }
       candidates = this.filterByTheme(candidates, criteria.theme);
     }
 
-    // 4. If no candidates found, generate dynamic scenario
+    // 5. If no candidates found, generate dynamic scenario
     if (candidates.length === 0) {
       if (criteria.theme) {
         return this.generateDynamicScenario(criteria.theme, criteria.yearLevel);
@@ -60,10 +82,10 @@ export class ScenarioService {
       }
     }
 
-    // 5. Score and rank candidates
+    // 6. Score and rank candidates
     const scored = this.scoreScenarios(candidates, criteria);
 
-    // 6. Select best match with some randomization
+    // 7. Select best match with some randomization
     return this.selectWithRandomization(scored);
   }
 
@@ -667,7 +689,7 @@ export class ScenarioService {
         atmosphere: 'friendly'
       },
       characters: [
-        { name: 'placeholder', role: 'student' }
+        { name: this.selectRandomName(), role: 'student' }
       ],
       items,
       culturalElements: [
@@ -776,5 +798,209 @@ export class ScenarioService {
       }
       this.themeIndex.get(scenario.theme)!.push(id);
     }
+  }
+
+  /**
+   * Initialize model-theme compatibility matrix
+   * This defines which themes are appropriate for different mathematical models
+   */
+  private initializeModelThemeCompatibility(): void {
+    // Money-focused models - work well with shopping, school, pocket money scenarios
+    this.modelThemeCompatibility.set('ADDITION', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.POCKET_MONEY,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.COOKING,
+      ScenarioTheme.HOUSEHOLD
+    ]);
+
+    this.modelThemeCompatibility.set('SUBTRACTION', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.POCKET_MONEY,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.COOKING,
+      ScenarioTheme.HOUSEHOLD
+    ]);
+
+    this.modelThemeCompatibility.set('MULTIPLICATION', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.COOKING,
+      ScenarioTheme.HOUSEHOLD,
+      ScenarioTheme.COLLECTIONS
+    ]);
+
+    this.modelThemeCompatibility.set('DIVISION', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.COOKING,
+      ScenarioTheme.HOUSEHOLD,
+      ScenarioTheme.COLLECTIONS
+    ]);
+
+    // Money-specific models - primarily shopping and school contexts
+    this.modelThemeCompatibility.set('COIN_RECOGNITION', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.POCKET_MONEY
+    ]);
+
+    this.modelThemeCompatibility.set('CHANGE_CALCULATION', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.POCKET_MONEY
+    ]);
+
+    this.modelThemeCompatibility.set('MONEY_COMBINATIONS', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.POCKET_MONEY
+    ]);
+
+    this.modelThemeCompatibility.set('MIXED_MONEY_UNITS', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.POCKET_MONEY
+    ]);
+
+    this.modelThemeCompatibility.set('MONEY_FRACTIONS', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.POCKET_MONEY
+    ]);
+
+    this.modelThemeCompatibility.set('MONEY_SCALING', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.POCKET_MONEY
+    ]);
+
+    // Percentage and rates - work well with shopping and value comparisons
+    this.modelThemeCompatibility.set('PERCENTAGE', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.POCKET_MONEY
+    ]);
+
+    this.modelThemeCompatibility.set('UNIT_RATE', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.COOKING,
+      ScenarioTheme.TRANSPORT
+    ]);
+
+    // Fractions - cooking and household work well
+    this.modelThemeCompatibility.set('FRACTION', [
+      ScenarioTheme.COOKING,
+      ScenarioTheme.HOUSEHOLD,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.SCHOOL
+    ]);
+
+    // Geometry models - nature, household, sports
+    this.modelThemeCompatibility.set('SHAPE_RECOGNITION', [
+      ScenarioTheme.NATURE,
+      ScenarioTheme.HOUSEHOLD,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.SCHOOL
+    ]);
+
+    this.modelThemeCompatibility.set('SHAPE_PROPERTIES', [
+      ScenarioTheme.NATURE,
+      ScenarioTheme.HOUSEHOLD,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.SCHOOL
+    ]);
+
+    this.modelThemeCompatibility.set('ANGLE_MEASUREMENT', [
+      ScenarioTheme.NATURE,
+      ScenarioTheme.HOUSEHOLD,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.SCHOOL
+    ]);
+
+    this.modelThemeCompatibility.set('POSITION_DIRECTION', [
+      ScenarioTheme.NATURE,
+      ScenarioTheme.TRANSPORT,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.HOUSEHOLD
+    ]);
+
+    this.modelThemeCompatibility.set('AREA_PERIMETER', [
+      ScenarioTheme.HOUSEHOLD,
+      ScenarioTheme.NATURE,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.SCHOOL
+    ]);
+
+    // Time and measurement
+    this.modelThemeCompatibility.set('TIME_RATE', [
+      ScenarioTheme.TRANSPORT,
+      ScenarioTheme.COOKING,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.SCHOOL
+    ]);
+
+    this.modelThemeCompatibility.set('CONVERSION', [
+      ScenarioTheme.COOKING,
+      ScenarioTheme.HOUSEHOLD,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.TRANSPORT
+    ]);
+
+    // Advanced models - broader compatibility
+    this.modelThemeCompatibility.set('LINEAR_EQUATION', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.TRANSPORT,
+      ScenarioTheme.HOUSEHOLD
+    ]);
+
+    this.modelThemeCompatibility.set('MULTI_STEP', [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.SPORTS,
+      ScenarioTheme.COOKING,
+      ScenarioTheme.HOUSEHOLD
+    ]);
+
+    // Collections and counting
+    this.modelThemeCompatibility.set('COUNTING', [
+      ScenarioTheme.COLLECTIONS,
+      ScenarioTheme.NATURE,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.SPORTS
+    ]);
+
+    // Default fallback for any models not explicitly defined
+    // Include most general themes
+    const defaultThemes = [
+      ScenarioTheme.SHOPPING,
+      ScenarioTheme.SCHOOL,
+      ScenarioTheme.HOUSEHOLD
+    ];
+
+    // Ensure all undefined models get default themes
+    const definedModels = new Set(this.modelThemeCompatibility.keys());
+    const allModels = [
+      'ADDITION', 'SUBTRACTION', 'MULTIPLICATION', 'DIVISION',
+      'COIN_RECOGNITION', 'CHANGE_CALCULATION', 'MONEY_COMBINATIONS',
+      'MIXED_MONEY_UNITS', 'MONEY_FRACTIONS', 'MONEY_SCALING',
+      'PERCENTAGE', 'UNIT_RATE', 'FRACTION', 'LINEAR_EQUATION',
+      'MULTI_STEP', 'TIME_RATE', 'CONVERSION', 'COUNTING',
+      'SHAPE_RECOGNITION', 'SHAPE_PROPERTIES', 'ANGLE_MEASUREMENT',
+      'POSITION_DIRECTION', 'AREA_PERIMETER'
+    ];
+
+    allModels.forEach(model => {
+      if (!definedModels.has(model)) {
+        this.modelThemeCompatibility.set(model, defaultThemes);
+      }
+    });
   }
 }

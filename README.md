@@ -2,6 +2,10 @@
 
 Factory Architect is a TypeScript-based educational question generator for UK National Curriculum Mathematics. The project implements a sophisticated **Enhanced Question Generation System** that combines mathematical accuracy with pedagogical variety.
 
+> 📚 **New Features Documentation**: See [FEATURES.md](./FEATURES.md) for the complete feature list, recent improvements, and usage examples.
+>
+> 🏗️ **Architecture Details**: See [ARCHITECTURE.md](./ARCHITECTURE.md) for system design and implementation details.
+
 ## Architecture Overview
 
 ### Core System (Established)

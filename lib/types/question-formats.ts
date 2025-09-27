@@ -285,6 +285,7 @@ export interface ScenarioCriteria {
   yearLevel: number;
   theme?: ScenarioTheme;
   culturalContext?: string;
+  mathModel?: string; // Add mathModel for theme compatibility filtering
 }
 
 export interface ScoredScenario {

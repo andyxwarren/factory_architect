@@ -111,20 +111,49 @@ export class ValidationController extends QuestionController {
     // Distractors are "True" or "False"
     const distractors = await this.generateTrueFalseDistractors(statementIsTrue);
 
-    return {
-      ...baseDefinition,
-      parameters: {
-        mathValues: mathOutput,
-        validationParams,
+    // Create proper QuestionParameters structure
+    const parameters = {
+      mathValues: {
+        ...mathOutput,
         presentedAnswer,
         correctAnswer,
-        statementIsTrue
+        isTrue: statementIsTrue
+      },
+      narrativeValues: {
+        character: scenario.characters?.[0]?.name || 'Student',
+        operation: this.describeOperation(mathOutput),
+        presentedAnswer: String(presentedAnswer)
+      },
+      units: {
+        input: '£',
+        result: '£'
+      },
+      formatting: {
+        currencyFormat: 'symbol' as const,
+        decimalPlaces: 2,
+        useGroupingSeparators: correctAnswer > 1000,
+        unitPosition: 'before' as const
+      }
+    };
+
+    return {
+      ...baseDefinition,
+      parameters,
+      questionContent: {
+        fullText: questionText,
+        components: undefined,
+        templateData: {
+          character: scenario.characters?.[0]?.name || 'Student',
+          operation: this.describeOperation(mathOutput),
+          presentedAnswer: String(presentedAnswer),
+          correctAnswer: String(correctAnswer)
+        }
       },
       solution: {
         correctAnswer: {
-          value: statementIsTrue,
-          displayText: statementIsTrue ? 'True' : 'False',
-          units: ''
+          value: correctAnswer,  // Return the actual numeric answer
+          displayText: this.formatValue(correctAnswer, '£'),
+          units: '£'
         },
         distractors,
         workingSteps: this.generateTrueFalseSteps(mathOutput, presentedAnswer, correctAnswer, statementIsTrue),
@@ -173,9 +202,9 @@ export class ValidationController extends QuestionController {
       },
       solution: {
         correctAnswer: {
-          value: hasError ? 'Incorrect' : 'Correct',
-          displayText: hasError ? 'Incorrect' : 'Correct',
-          units: ''
+          value: correctAnswer,  // Return the actual numeric answer
+          displayText: this.formatValue(correctAnswer, '£'),
+          units: '£'
         },
         distractors,
         workingSteps: this.generateCheckWorkExplanation(workingSteps, hasError, correctAnswer),

@@ -326,6 +326,37 @@ export interface GenerateRequest {
   year_level?: number;
 }
 
+export interface GenerationSetup {
+  // Orchestrator details
+  controller_used: string;
+  format_requested: string;
+  format_actual: string;
+  format_selection_reason?: string;
+
+  // Scenario details
+  scenario_theme: string;
+  scenario_id: string;
+  scenario_selection_method: string;
+
+  // Distractor details
+  distractor_strategies: string[];
+  distractor_count: number;
+
+  // Rules and weights
+  format_weights?: Record<string, number>;
+  theme_variety: boolean;
+  format_variety: boolean;
+
+  // Enhancement tracking
+  enhancement_level: 'full' | 'partial' | 'fallback';
+  features_active: string[];
+  features_pending: string[];
+
+  // Performance
+  generation_time_ms: number;
+  controller_init_time_ms?: number;
+}
+
 export interface GeneratedQuestion {
   question: string;
   answer: string | number;
@@ -340,6 +371,7 @@ export interface GeneratedQuestion {
     session_id?: string;
     timestamp: Date;
   };
+  generation_setup?: GenerationSetup;
 }
 
 // Model Information Types

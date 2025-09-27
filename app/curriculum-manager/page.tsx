@@ -367,7 +367,23 @@ export default function CurriculumManagerPage() {
       'Questions Generated',
       'Generation Time',
       'Curriculum Reference',
-      'Error Message'
+      'Error Message',
+      // Generation Setup Details
+      'Controller Used',
+      'Format Requested',
+      'Format Actual',
+      'Format Selection Reason',
+      'Scenario Theme',
+      'Scenario ID',
+      'Scenario Selection Method',
+      'Distractor Count',
+      'Distractor Strategies',
+      'Enhancement Level',
+      'Format Variety',
+      'Theme Variety',
+      'Generation Time MS',
+      'Features Active',
+      'Features Pending'
     ];
 
     const csvRows = [headers.join(',')];
@@ -376,6 +392,7 @@ export default function CurriculumManagerPage() {
       if (combination.questions && combination.questions.length > 0) {
         // Export each individual question
         combination.questions.forEach((question, qIndex) => {
+          const genSetup = question.generation_setup;
           const row = [
             `"C${combIndex + 1}_Q${qIndex + 1}"`,
             `"${question.question.replace(/"/g, '""')}"`,
@@ -393,7 +410,23 @@ export default function CurriculumManagerPage() {
             combination.questionsGenerated,
             question.metadata.timestamp ? new Date(question.metadata.timestamp).toISOString() : '',
             `"Year ${combination.year} Curriculum"`,
-            ''
+            '',
+            // Generation Setup Details
+            genSetup ? `"${genSetup.controller_used}"` : 'N/A',
+            genSetup ? `"${genSetup.format_requested}"` : 'N/A',
+            genSetup ? `"${genSetup.format_actual}"` : 'N/A',
+            genSetup && genSetup.format_selection_reason ? `"${genSetup.format_selection_reason}"` : '',
+            genSetup ? `"${genSetup.scenario_theme}"` : 'N/A',
+            genSetup ? `"${genSetup.scenario_id}"` : 'N/A',
+            genSetup ? `"${genSetup.scenario_selection_method}"` : 'N/A',
+            genSetup ? genSetup.distractor_count : 0,
+            genSetup ? `"${genSetup.distractor_strategies.join('; ')}"` : '',
+            genSetup ? `"${genSetup.enhancement_level}"` : 'N/A',
+            genSetup ? (genSetup.format_variety ? 'Yes' : 'No') : 'N/A',
+            genSetup ? (genSetup.theme_variety ? 'Yes' : 'No') : 'N/A',
+            genSetup ? genSetup.generation_time_ms : 0,
+            genSetup ? `"${genSetup.features_active.join('; ')}"` : '',
+            genSetup ? `"${genSetup.features_pending.join('; ')}"` : ''
           ];
           csvRows.push(row.join(','));
         });
@@ -416,7 +449,9 @@ export default function CurriculumManagerPage() {
           combination.questionsGenerated,
           '',
           `"Year ${combination.year} Curriculum"`,
-          `"${combination.error || 'Unknown error'}"`
+          `"${combination.error || 'Unknown error'}"`,
+          // Empty generation setup details for error cases
+          '', '', '', '', '', '', '', 0, '', '', '', '', 0, '', ''
         ];
         csvRows.push(row.join(','));
       }
@@ -541,7 +576,8 @@ export default function CurriculumManagerPage() {
             ...question.metadata,
             enhancedSystemUsed: question.metadata.enhanced_system_used,
             generationTimestamp: question.metadata.timestamp
-          }
+          },
+          generationSetup: question.generation_setup
         }))
       }))
     };

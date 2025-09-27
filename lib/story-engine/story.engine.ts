@@ -106,13 +106,19 @@ export class StoryEngine {
     const person = context.person || 'Sarah';
     const items = context.item_descriptors || ['item'];
     const symbol = context.unit_symbol || '£';
-    
-    if (context.unit_type === 'currency' && items.length >= output.operands.length) {
-      // Shopping scenario
-      const purchases = output.operands.map((value, i) => 
-        `a ${items[i]} for ${MoneyContextGenerator.formatMoney(value)}`
+
+    // Ensure we have enough items for all operands
+    if (context.unit_type === 'currency' && items.length > 0) {
+      // Shopping scenario - ensure we have items for each operand
+      const itemsToUse = [];
+      for (let i = 0; i < output.operands.length; i++) {
+        itemsToUse.push(items[i % items.length]); // Reuse items if not enough
+      }
+
+      const purchases = output.operands.map((value, i) =>
+        `a ${itemsToUse[i]} for ${MoneyContextGenerator.formatMoney(value)}`
       ).join(', ');
-      
+
       return `${person} goes to the shop and buys ${purchases}. How much does ${person} spend in total?`;
     }
     

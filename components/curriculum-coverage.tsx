@@ -438,14 +438,67 @@ export function CurriculumCoverage({ combinations, config }: CurriculumCoverageP
                           </p>
                         </div>
 
-                        <details className="mt-3">
-                          <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800">
-                            Technical Details
-                          </summary>
-                          <pre className="mt-2 text-xs bg-gray-100 p-3 rounded overflow-auto">
-                            {JSON.stringify(question.math_output, null, 2)}
-                          </pre>
-                        </details>
+                        <div className="mt-3 space-y-2">
+                          <details>
+                            <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800">
+                              Generation Setup Details
+                            </summary>
+                            <div className="mt-2">
+                              {question.generation_setup ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs bg-blue-50 p-3 rounded">
+                                  <div>
+                                    <div className="font-medium text-blue-800 mb-2">Controller & Format</div>
+                                    <div className="space-y-1 text-blue-700">
+                                      <div><span className="font-medium">Controller:</span> {question.generation_setup.controller_used}</div>
+                                      <div><span className="font-medium">Format Requested:</span> {question.generation_setup.format_requested}</div>
+                                      <div><span className="font-medium">Format Used:</span> {question.generation_setup.format_actual}</div>
+                                      {question.generation_setup.format_selection_reason && (
+                                        <div><span className="font-medium">Selection Reason:</span> {question.generation_setup.format_selection_reason}</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-blue-800 mb-2">Scenario & Theme</div>
+                                    <div className="space-y-1 text-blue-700">
+                                      <div><span className="font-medium">Theme:</span> {question.generation_setup.scenario_theme}</div>
+                                      <div><span className="font-medium">Scenario ID:</span> {question.generation_setup.scenario_id}</div>
+                                      <div><span className="font-medium">Selection Method:</span> {question.generation_setup.scenario_selection_method}</div>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-blue-800 mb-2">Distractors</div>
+                                    <div className="space-y-1 text-blue-700">
+                                      <div><span className="font-medium">Count:</span> {question.generation_setup.distractor_count}</div>
+                                      <div><span className="font-medium">Strategies:</span> {question.generation_setup.distractor_strategies.join(', ') || 'None'}</div>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-blue-800 mb-2">System Settings</div>
+                                    <div className="space-y-1 text-blue-700">
+                                      <div><span className="font-medium">Enhancement Level:</span> {question.generation_setup.enhancement_level}</div>
+                                      <div><span className="font-medium">Format Variety:</span> {question.generation_setup.format_variety ? 'Yes' : 'No'}</div>
+                                      <div><span className="font-medium">Theme Variety:</span> {question.generation_setup.theme_variety ? 'Yes' : 'No'}</div>
+                                      <div><span className="font-medium">Generation Time:</span> {question.generation_setup.generation_time_ms}ms</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-500 italic bg-gray-50 p-3 rounded">
+                                  No generation setup details available (generated with older version)
+                                </div>
+                              )}
+                            </div>
+                          </details>
+
+                          <details>
+                            <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800">
+                              Technical Details
+                            </summary>
+                            <pre className="mt-2 text-xs bg-gray-100 p-3 rounded overflow-auto">
+                              {JSON.stringify(question.math_output, null, 2)}
+                            </pre>
+                          </details>
+                        </div>
                       </div>
                     ))}
                   </div>

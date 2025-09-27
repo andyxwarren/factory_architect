@@ -57,7 +57,7 @@ const EXCLUDED_FILES = [
     'FACTORY_MODEL_IMPLEMENTATION_GUIDE.md',
     'Factory_Architect_User_Guide.md',
     'README.md',
-    'STUDENT_INTERFACE_PROJECT_PROPOSAL.md'
+    'STUDENT_INTERFACE_PROJECT_PROPOSAL.md', '.md', '.csv'
 ];
 const EXCLUDED_EXTENSIONS = [ /* ... your existing list ... */
     // Binary and media files

@@ -41,7 +41,7 @@ export class EstimationController extends QuestionController {
 
     // 2. Select appropriate scenario
     const scenario = await this.selectScenario({
-      theme: params.preferredTheme || ScenarioTheme.REAL_WORLD,
+      theme: params.preferredTheme || ScenarioTheme.SHOPPING,
       mathModel: params.mathModel,
       difficulty: params.difficulty,
       culturalContext: params.culturalContext
@@ -103,14 +103,43 @@ export class EstimationController extends QuestionController {
     // Generate distractors for rounding
     const distractors = await this.generateRoundingDistractors(exactValue, roundedValue, roundingPlace);
 
+    // Create proper QuestionParameters structure
+    const parameters = {
+      mathValues: {
+        ...mathOutput,
+        exactValue,
+        roundedValue
+      },
+      narrativeValues: {
+        character: scenario.characters?.[0]?.name || 'Student',
+        roundingPlace,
+        operation: this.describeOperation(mathOutput)
+      },
+      units: {
+        input: '£',
+        result: '£'
+      },
+      formatting: {
+        currencyFormat: 'symbol' as const,
+        decimalPlaces: 2,
+        useGroupingSeparators: roundedValue > 1000,
+        unitPosition: 'before' as const
+      }
+    };
+
     return {
       ...baseDefinition,
-      parameters: {
-        mathValues: mathOutput,
-        estimationParams,
-        exactValue,
-        roundedValue,
-        roundingPlace
+      parameters,
+      questionContent: {
+        fullText: questionText,
+        components: undefined,
+        templateData: {
+          character: scenario.characters?.[0]?.name || 'Student',
+          operation: this.describeOperation(mathOutput),
+          roundingPlace,
+          exactValue: String(exactValue),
+          roundedValue: String(roundedValue)
+        }
       },
       solution: {
         correctAnswer: {
@@ -152,14 +181,42 @@ export class EstimationController extends QuestionController {
     // Generate distractors for approximation
     const distractors = await this.generateApproximationDistractors(exactValue, estimatedValue, estimationParams.toleranceRange || 0.15);
 
+    // Create proper QuestionParameters structure
+    const parameters = {
+      mathValues: {
+        ...mathOutput,
+        exactValue,
+        estimatedValue
+      },
+      narrativeValues: {
+        character: scenario.characters?.[0]?.name || 'Student',
+        operation: this.describeOperation(mathOutput),
+        toleranceRange: String(estimationParams.toleranceRange)
+      },
+      units: {
+        input: '£',
+        result: '£'
+      },
+      formatting: {
+        currencyFormat: 'symbol' as const,
+        decimalPlaces: 2,
+        useGroupingSeparators: estimatedValue > 1000,
+        unitPosition: 'before' as const
+      }
+    };
+
     return {
       ...baseDefinition,
-      parameters: {
-        mathValues: mathOutput,
-        estimationParams,
-        exactValue,
-        estimatedValue,
-        toleranceRange: estimationParams.toleranceRange
+      parameters,
+      questionContent: {
+        fullText: questionText,
+        components: undefined,
+        templateData: {
+          character: scenario.characters?.[0]?.name || 'Student',
+          operation: this.describeOperation(mathOutput),
+          exactValue: String(exactValue),
+          estimatedValue: String(estimatedValue)
+        }
       },
       solution: {
         correctAnswer: {
@@ -387,18 +444,59 @@ export class EstimationController extends QuestionController {
   }
 
   private describeOperation(mathOutput: any): string {
-    // Create contextual operation description
+    // Create contextual operation description with proper value extraction
+    if (!mathOutput) {
+      return 'is calculating a result';
+    }
+
+    // Try different ways to extract operands
+    const getOperands = (mathOutput: any) => {
+      // Try operands array first
+      if (mathOutput.operands && Array.isArray(mathOutput.operands) && mathOutput.operands.length > 0) {
+        return mathOutput.operands;
+      }
+
+      // Try individual operand fields
+      const operand1 = mathOutput.operand_1 || mathOutput.minuend || mathOutput.multiplicand || mathOutput.dividend;
+      const operand2 = mathOutput.operand_2 || mathOutput.subtrahend || mathOutput.multiplier || mathOutput.divisor;
+      const operand3 = mathOutput.operand_3;
+
+      if (operand1 !== undefined && operand2 !== undefined) {
+        const operands = [operand1, operand2];
+        if (operand3 !== undefined) operands.push(operand3);
+        return operands;
+      }
+
+      return null;
+    };
+
+    const operands = getOperands(mathOutput);
+
+    if (!operands || operands.some(op => op === undefined || op === null)) {
+      console.warn('EstimationController: Invalid or missing operands in mathOutput:', mathOutput);
+      return 'is calculating a result';
+    }
+
+    // Format monetary values
+    const formatValue = (value: number) => `£${value.toFixed(2)}`;
+
     switch (mathOutput.operation) {
       case 'ADDITION':
-        return `is adding ${mathOutput.operand_1} + ${mathOutput.operand_2}${mathOutput.operand_3 ? ' + ' + mathOutput.operand_3 : ''}`;
+        if (operands.length === 2) {
+          return `is adding ${formatValue(operands[0])} + ${formatValue(operands[1])}`;
+        } else if (operands.length === 3) {
+          return `is adding ${formatValue(operands[0])} + ${formatValue(operands[1])} + ${formatValue(operands[2])}`;
+        } else {
+          return `is adding ${operands.map(formatValue).join(' + ')}`;
+        }
       case 'SUBTRACTION':
-        return `is subtracting ${mathOutput.operand_1} - ${mathOutput.operand_2}`;
+        return `is subtracting ${formatValue(operands[0])} - ${formatValue(operands[1])}`;
       case 'MULTIPLICATION':
-        return `is multiplying ${mathOutput.operand_1} × ${mathOutput.operand_2}`;
+        return `is multiplying ${formatValue(operands[0])} × ${operands[1]}`;
       case 'DIVISION':
-        return `is dividing ${mathOutput.operand_1} ÷ ${mathOutput.operand_2}`;
+        return `is dividing ${formatValue(operands[0])} ÷ ${operands[1]}`;
       default:
-        return `is calculating a result`;
+        return `is calculating with values ${operands.map(formatValue).join(', ')}`;
     }
   }
 

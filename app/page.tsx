@@ -79,25 +79,49 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="text-center space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="text-center space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link
               href="/test"
-              className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
+              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
             >
-              Question Testing Interface
+              Question Testing
             </Link>
             <Link
               href="/curriculum-manager"
-              className="inline-block bg-green-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-green-700 transition-colors"
+              className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
             >
               Curriculum Manager
             </Link>
+            <Link
+              href="/curriculum-tester"
+              className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+            >
+              Testing Center
+            </Link>
+            <Link
+              href="/curriculum-curator"
+              className="inline-block bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors"
+            >
+              Curriculum Curator
+            </Link>
           </div>
-          <p className="text-sm text-gray-600 max-w-2xl mx-auto">
-            Use the Testing Interface to generate and test individual questions, or the Curriculum Manager to generate
-            comprehensive question sets for every strand, substrand, year level, and sublevel combination.
-          </p>
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto text-left">
+            <div>
+              <h3 className="font-semibold text-lg mb-2">Core Interfaces</h3>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li><strong>Question Testing:</strong> Generate and test individual questions</li>
+                <li><strong>Curriculum Manager:</strong> Bulk generation for all curriculum combinations</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg mb-2">Testing & Curation</h3>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li><strong>Testing Center:</strong> Systematically test model-curriculum combinations</li>
+                <li><strong>Curriculum Curator:</strong> Define and manage curated model mappings</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         <div className="mt-12 bg-gray-100 rounded-lg p-6">

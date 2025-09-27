@@ -226,7 +226,7 @@ export default function TestPage() {
     if (showBatchView && generatedQuestions.length > 0) {
       const csvContent = "Question,Answer,Model,Year Level,Sub Level,Enhancement Status,Format Used\n" +
         generatedQuestions.map(q =>
-          `"${q.question.replace(/"/g, '""')}","${q.answer}","${q.metadata.model_id}","${q.metadata.year_level}","${q.metadata.sub_level || 'N/A'}","${q.metadata.enhancement_status || 'unknown'}","${q.metadata.format_used || 'unknown'}"`
+          `"${q.question.replace(/"/g, '""')}","${q.answer}","${q.metadata.model_id}","${q.metadata.year_level}","${q.metadata.sub_level || 'N/A'}","${q.generation_setup?.enhancement_level || 'unknown'}","${q.generation_setup?.format_actual || 'unknown'}"`
         ).join('\n');
 
       const dataStr = "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent);

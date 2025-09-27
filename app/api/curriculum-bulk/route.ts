@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GeneratedQuestion, IMathModel } from '@/lib/types';
+import { GeneratedQuestion, GenerationSetup, IMathModel } from '@/lib/types';
 import { curriculumParser, CurriculumFilter } from '@/lib/curriculum/curriculum-parser';
 import { curriculumModelMapper } from '@/lib/curriculum/curriculum-model-mapping';
 import { getModel } from '@/lib/math-engine';
@@ -42,6 +42,200 @@ const FORMAT_WEIGHTS = {
   [QuestionFormat.PATTERN_RECOGNITION]: 0.05
 };
 
+// Fine-grained format compatibility matrix for each model
+const MODEL_FORMAT_COMPATIBILITY: Record<string, QuestionFormat[]> = {
+  // Basic arithmetic - focus on calculation and word problems
+  'ADDITION': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.MULTI_STEP,
+    QuestionFormat.MISSING_VALUE,
+    QuestionFormat.COMPARISON
+  ],
+  'SUBTRACTION': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.MULTI_STEP,
+    QuestionFormat.MISSING_VALUE,
+    QuestionFormat.COMPARISON
+  ],
+  'MULTIPLICATION': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.MULTI_STEP,
+    QuestionFormat.MISSING_VALUE,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.PATTERN_RECOGNITION
+  ],
+  'DIVISION': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.MULTI_STEP,
+    QuestionFormat.MISSING_VALUE,
+    QuestionFormat.VALIDATION
+  ],
+
+  // Advanced arithmetic - can use estimation and validation
+  'PERCENTAGE': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.ESTIMATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.VALIDATION,
+    QuestionFormat.MULTI_STEP
+  ],
+  'FRACTION': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.ORDERING,
+    QuestionFormat.MISSING_VALUE,
+    QuestionFormat.VALIDATION
+  ],
+
+  // Complex models - full range of formats
+  'MULTI_STEP': [
+    QuestionFormat.MULTI_STEP,
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.VALIDATION
+  ],
+  'LINEAR_EQUATION': [
+    QuestionFormat.MISSING_VALUE,
+    QuestionFormat.PATTERN_RECOGNITION,
+    QuestionFormat.DIRECT_CALCULATION
+  ],
+  'COMPARISON': [
+    QuestionFormat.COMPARISON,
+    QuestionFormat.ORDERING,
+    QuestionFormat.VALIDATION
+  ],
+
+  // Measurement and conversion
+  'CONVERSION': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.ESTIMATION,
+    QuestionFormat.VALIDATION
+  ],
+  'TIME_RATE': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.MULTI_STEP,
+    QuestionFormat.COMPARISON
+  ],
+  'UNIT_RATE': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.MULTI_STEP
+  ],
+
+  // Counting and patterns
+  'COUNTING': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.PATTERN_RECOGNITION,
+    QuestionFormat.ORDERING
+  ],
+
+  // Money-specific models
+  'COIN_RECOGNITION': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.ORDERING,
+    QuestionFormat.COMPARISON
+  ],
+  'CHANGE_CALCULATION': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.MULTI_STEP,
+    QuestionFormat.MISSING_VALUE
+  ],
+  'MONEY_COMBINATIONS': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.PATTERN_RECOGNITION,
+    QuestionFormat.VALIDATION
+  ],
+  'MIXED_MONEY_UNITS': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.MULTI_STEP
+  ],
+  'MONEY_FRACTIONS': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.MISSING_VALUE
+  ],
+  'MONEY_SCALING': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.PATTERN_RECOGNITION
+  ],
+
+  // Geometry models
+  'SHAPE_RECOGNITION': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.ORDERING
+  ],
+  'SHAPE_PROPERTIES': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.VALIDATION
+  ],
+  'ANGLE_MEASUREMENT': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.ESTIMATION
+  ],
+  'POSITION_DIRECTION': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.PATTERN_RECOGNITION
+  ],
+  'AREA_PERIMETER': [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.MULTI_STEP,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.MISSING_VALUE
+  ]
+};
+
+// Difficulty-based format restrictions
+const DIFFICULTY_FORMAT_LIMITS: Record<number, QuestionFormat[]> = {
+  1: [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON
+  ],
+  2: [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.MULTI_STEP
+  ],
+  3: [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.MULTI_STEP,
+    QuestionFormat.MISSING_VALUE
+  ],
+  4: [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.MULTI_STEP,
+    QuestionFormat.MISSING_VALUE,
+    QuestionFormat.ESTIMATION,
+    QuestionFormat.ORDERING
+  ],
+  5: [
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.MULTI_STEP,
+    QuestionFormat.MISSING_VALUE,
+    QuestionFormat.ESTIMATION,
+    QuestionFormat.ORDERING,
+    QuestionFormat.VALIDATION
+  ],
+  6: [
+    // Year 6 can use all formats
+    QuestionFormat.DIRECT_CALCULATION,
+    QuestionFormat.COMPARISON,
+    QuestionFormat.MULTI_STEP,
+    QuestionFormat.MISSING_VALUE,
+    QuestionFormat.ESTIMATION,
+    QuestionFormat.ORDERING,
+    QuestionFormat.VALIDATION,
+    QuestionFormat.PATTERN_RECOGNITION
+  ]
+};
+
 // Theme variety for different contexts
 const AVAILABLE_THEMES = [
   ScenarioTheme.SHOPPING,
@@ -66,23 +260,63 @@ function getPreferredFormats(substrand: string): QuestionFormat[] {
   return formatMap[substrand] || [QuestionFormat.DIRECT_CALCULATION];
 }
 
-// Select format based on index and preferences
+// Select format based on index and preferences - with enhanced intelligence
 function selectFormat(
   questionIndex: number,
   preferredFormats: QuestionFormat[],
-  formatVariety: boolean
+  formatVariety: boolean,
+  modelId?: string,
+  yearLevel?: number
 ): QuestionFormat {
+  // No variety requested - use simplest format
   if (!formatVariety) {
     return QuestionFormat.DIRECT_CALCULATION;
   }
 
+  // User has specific preferences - respect them but validate
   if (preferredFormats.length > 0) {
-    return preferredFormats[questionIndex % preferredFormats.length];
+    const selectedFormat = preferredFormats[questionIndex % preferredFormats.length];
+
+    // Validate against year level restrictions if provided
+    if (yearLevel && DIFFICULTY_FORMAT_LIMITS[yearLevel]) {
+      const allowedFormats = DIFFICULTY_FORMAT_LIMITS[yearLevel];
+      if (!allowedFormats.includes(selectedFormat)) {
+        // Fall back to first allowed format
+        return allowedFormats[0];
+      }
+    }
+
+    return selectedFormat;
   }
 
-  // Use weighted random selection
-  const formats = Object.keys(FORMAT_WEIGHTS) as QuestionFormat[];
-  return formats[questionIndex % formats.length];
+  // Get compatible formats for the model
+  let compatibleFormats: QuestionFormat[] = [];
+
+  if (modelId && MODEL_FORMAT_COMPATIBILITY[modelId]) {
+    compatibleFormats = MODEL_FORMAT_COMPATIBILITY[modelId];
+  } else {
+    // Unknown model - use safe defaults
+    compatibleFormats = [
+      QuestionFormat.DIRECT_CALCULATION,
+      QuestionFormat.MULTI_STEP,
+      QuestionFormat.COMPARISON
+    ];
+  }
+
+  // Apply year level restrictions if provided
+  if (yearLevel && DIFFICULTY_FORMAT_LIMITS[yearLevel]) {
+    const yearFormats = DIFFICULTY_FORMAT_LIMITS[yearLevel];
+    // Intersection of compatible and year-appropriate formats
+    compatibleFormats = compatibleFormats.filter(f => yearFormats.includes(f));
+
+    // Ensure we have at least one format
+    if (compatibleFormats.length === 0) {
+      compatibleFormats = [QuestionFormat.DIRECT_CALCULATION];
+    }
+  }
+
+  // Select from compatible formats using rotation
+  return compatibleFormats[questionIndex % compatibleFormats.length];
 }
 
 // Select theme for variety
@@ -347,7 +581,7 @@ export async function POST(req: NextRequest) {
             const availableFormats = preferredFormats.length > 0 ? preferredFormats : curricularFormats;
 
             // Select format and theme for variety
-            const selectedFormat = selectFormat(q, availableFormats, formatVariety);
+            const selectedFormat = selectFormat(q, availableFormats, formatVariety, combination.primaryModel, combination.year);
             const selectedTheme = selectTheme(q, preferredThemes, themeVariety);
 
             // Create enhanced question request
@@ -361,6 +595,16 @@ export async function POST(req: NextRequest) {
             };
 
             const enhancedQuestion = await orchestrator.generateQuestion(enhancedRequest);
+
+            // Create enhanced generation setup with bulk API specific information
+            const enhancedGenerationSetup: GenerationSetup = {
+              ...enhancedQuestion.generationSetup!,
+              // Update with bulk API specific settings
+              format_weights: FORMAT_WEIGHTS,
+              theme_variety: themeVariety,
+              format_variety: formatVariety,
+              scenario_selection_method: themeVariety ? 'rotation' : 'fixed'
+            };
 
             // Adapt to response format
             generatedQuestion = {
@@ -376,7 +620,8 @@ export async function POST(req: NextRequest) {
                 enhanced_system_used: true,
                 session_id: sessionId,
                 timestamp: new Date()
-              }
+              },
+              generation_setup: enhancedGenerationSetup
             };
 
             questions.push(generatedQuestion);

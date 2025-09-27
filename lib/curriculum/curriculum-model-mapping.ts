@@ -1,5 +1,6 @@
 import { CurriculumFilter } from './curriculum-parser';
-import { MODEL_STATUS_REGISTRY, ModelStatusInfo } from '../models/model-status';
+import { MODEL_STATUS_REGISTRY } from '../models/model-status';
+import { curatedMappingsManager } from './curated-mappings';
 
 /**
  * Maps curriculum areas to appropriate mathematical models
@@ -19,14 +20,42 @@ class CurriculumModelMapper {
   
   /**
    * Get suggested models for a specific curriculum filter
+   * Now integrates with curated mappings when available
    */
   getSuggestedModels(filter: CurriculumFilter): string[] {
+    const { strand, substrand, year, description } = filter;
+
+    // First check for curated mappings (takes priority)
+    const curated = curatedMappingsManager.getSuggestedModels(filter);
+    if (curated.primary || curated.secondary.length > 0) {
+      // Return curated suggestions, excluding excluded models
+      const suggested: string[] = [];
+      if (curated.primary) suggested.push(curated.primary);
+      suggested.push(...curated.secondary);
+
+      // Add automatic suggestions that aren't excluded
+      const automaticFiltered = curated.automatic.filter(
+        model => !curated.excluded.includes(model)
+      );
+      suggested.push(...automaticFiltered);
+
+      return [...new Set(suggested)];
+    }
+
+    // Fall back to automatic mapping if no curated mapping
+    return this.getAutomaticSuggestions(filter);
+  }
+
+  /**
+   * Get automatic model suggestions (legacy behavior)
+   */
+  getAutomaticSuggestions(filter: CurriculumFilter): string[] {
     const { strand, substrand, year, description } = filter;
     const suggestedModels: Set<string> = new Set();
 
     // Direct mapping based on strand and substrand patterns
     const mappings = this.getDirectMappings();
-    
+
     // Find matching mappings
     mappings.forEach(mapping => {
       if (this.matchesMapping(mapping, strand, substrand, year)) {
@@ -47,8 +76,16 @@ class CurriculumModelMapper {
 
   /**
    * Get the primary (most relevant) model for a curriculum area
+   * Now integrates with curated mappings when available
    */
   getPrimaryModel(filter: CurriculumFilter): string | null {
+    // First check for curated primary model
+    const curated = curatedMappingsManager.getSuggestedModels(filter);
+    if (curated.primary) {
+      return curated.primary;
+    }
+
+    // Fall back to automatic suggestion logic
     const suggested = this.getSuggestedModels(filter);
     if (suggested.length === 0) return null;
 

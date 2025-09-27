@@ -26,7 +26,7 @@ import {
 } from '@/lib/types/question-formats';
 
 // Import existing types for compatibility
-// Note: IMathModel import removed as it was unused
+import type { GenerationSetup } from '@/lib/types';
 
 /**
  * Request structure for enhanced question generation
@@ -85,6 +85,9 @@ export interface EnhancedQuestion {
   // Generation metadata
   generationTime: number;
   questionId: string;
+
+  // Complete generation setup details
+  generationSetup?: GenerationSetup;
 }
 
 export interface QuestionOption {
@@ -199,9 +202,40 @@ export class QuestionOrchestrator {
     // 6. Render to final format
     const rendered = this.renderer.render(questionDef);
 
-    // 7. Enhance with metadata and return
+    // 7. Create generation setup details
     const endTime = Date.now();
-    return this.enhanceQuestion(rendered, questionDef, enhancementStatus, endTime - startTime);
+    const generationSetup: GenerationSetup = {
+      // Orchestrator details
+      controller_used: `${actualFormat}Controller`,
+      format_requested: selectedFormat,
+      format_actual: actualFormat,
+      format_selection_reason: enhancementStatus.reason,
+
+      // Scenario details
+      scenario_theme: questionDef.scenario.theme || 'UNKNOWN',
+      scenario_id: questionDef.scenario.id || 'UNKNOWN',
+      scenario_selection_method: request.scenario_theme ? 'requested' : 'default',
+
+      // Distractor details
+      distractor_strategies: questionDef.solution.distractors?.map((d: any) => d.strategy) || [],
+      distractor_count: questionDef.solution.distractors?.length || 0,
+
+      // Rules and weights
+      format_weights: undefined, // Will be set by bulk API if available
+      theme_variety: false, // Will be set by bulk API if available
+      format_variety: false, // Will be set by bulk API if available
+
+      // Enhancement tracking
+      enhancement_level: enhancementStatus.level,
+      features_active: enhancementStatus.featuresActive,
+      features_pending: enhancementStatus.featuresPending,
+
+      // Performance
+      generation_time_ms: endTime - startTime
+    };
+
+    // 8. Enhance with metadata and return
+    return this.enhanceQuestion(rendered, questionDef, enhancementStatus, endTime - startTime, generationSetup);
   }
 
   /**
@@ -340,11 +374,22 @@ export class QuestionOrchestrator {
     rendered: RenderedQuestion,
     definition: QuestionDefinition,
     enhancementStatus: EnhancementStatus,
-    generationTime: number
+    generationTime: number,
+    generationSetup?: GenerationSetup
   ): EnhancedQuestion {
+    // Ensure we have valid question text
+    let questionText = rendered.questionText;
+    if (!questionText || questionText === 'What is ?' || questionText.length < 10) {
+      console.warn('Invalid question text detected, using fallback generation');
+      questionText = this.generateFallbackQuestion(definition);
+    }
+
+    // Ensure we have valid options with numeric answers
+    const validatedOptions = this.validateOptions(rendered.options, definition);
+
     return {
-      text: rendered.questionText,
-      options: rendered.options,
+      text: questionText,
+      options: validatedOptions,
       correctIndex: rendered.correctIndex,
       questionContent: definition.questionContent,
       format: definition.format,
@@ -356,8 +401,195 @@ export class QuestionOrchestrator {
       enhancementStatus,
       mathOutput: this.extractMathOutput(definition),
       generationTime,
-      questionId: definition.id
+      questionId: definition.id,
+      generationSetup
     };
+  }
+
+  /**
+   * Generate fallback question text when rendering fails
+   */
+  private generateFallbackQuestion(definition: QuestionDefinition): string {
+    const model = definition.mathModel;
+    const values = definition.parameters?.mathValues || {};
+    const narrative = definition.parameters?.narrativeValues || {};
+    const scenario = definition.scenario;
+
+    // Try to generate scenario-aware question first
+    if (scenario && scenario.theme) {
+      const scenarioQuestion = this.generateScenarioAwareFallback(model, values, narrative, scenario);
+      if (scenarioQuestion) {
+        return scenarioQuestion;
+      }
+    }
+
+    // Generate basic question based on model
+    switch (model) {
+      case 'ADDITION':
+        const addends = values.operands || [values.operand_1, values.operand_2, values.operand_3].filter(v => v !== undefined);
+        if (addends.length > 0) {
+          return `What is ${addends.join(' + ')}?`;
+        }
+        return 'Add the numbers together.';
+
+      case 'SUBTRACTION':
+        const minuend = values.minuend || values.operand_1;
+        const subtrahend = values.subtrahend || values.operand_2;
+        if (minuend !== undefined && subtrahend !== undefined) {
+          return `What is ${minuend} - ${subtrahend}?`;
+        }
+        return 'Subtract to find the difference.';
+
+      case 'MULTIPLICATION':
+        const multiplicand = values.multiplicand || values.operand_1;
+        const multiplier = values.multiplier || values.operand_2;
+        if (multiplicand !== undefined && multiplier !== undefined) {
+          return `What is ${multiplicand} × ${multiplier}?`;
+        }
+        return 'Multiply to find the product.';
+
+      case 'DIVISION':
+        const dividend = values.dividend || values.operand_1;
+        const divisor = values.divisor || values.operand_2;
+        if (dividend !== undefined && divisor !== undefined) {
+          return `What is ${dividend} ÷ ${divisor}?`;
+        }
+        return 'Divide to find the quotient.';
+
+      case 'PERCENTAGE':
+        const percentage = values.percentage;
+        const baseValue = values.base_value;
+        if (percentage && baseValue) {
+          return `What is ${percentage}% of ${baseValue}?`;
+        }
+        return 'Calculate the percentage.';
+
+      case 'FRACTION':
+        const numerator = values.numerator;
+        const denominator = values.denominator;
+        if (numerator && denominator) {
+          return `What is ${numerator}/${denominator} as a decimal?`;
+        }
+        return 'Calculate the fraction.';
+
+      case 'UNIT_RATE':
+        return 'Compare the rates to find which is better value.';
+
+      case 'MONEY_COMBINATIONS':
+      case 'COIN_RECOGNITION':
+      case 'CHANGE_CALCULATION':
+        const amount = values.result || values.operand_1;
+        if (amount) {
+          return `How much money is this worth?`;
+        }
+        return 'Calculate the money amount.';
+
+      default:
+        // More descriptive default based on result
+        if (values.result !== undefined) {
+          return `What is the answer to this ${model.toLowerCase().replace('_', ' ')} problem?`;
+        }
+        return `Solve this ${model.toLowerCase().replace('_', ' ')} problem.`;
+    }
+  }
+
+  /**
+   * Generate scenario-aware fallback questions
+   */
+  private generateScenarioAwareFallback(
+    model: string,
+    values: Record<string, any>,
+    narrative: Record<string, any>,
+    scenario: any
+  ): string | null {
+    const character = narrative.character || scenario.characters?.[0]?.name || 'Sam';
+    const theme = scenario.theme;
+
+    switch (theme) {
+      case 'SHOPPING':
+        if (model === 'ADDITION' && values.operands) {
+          return `${character} buys items costing ${this.formatPrice(values.operands[0])} and ${this.formatPrice(values.operands[1])}. How much does ${character} spend altogether?`;
+        }
+        if (model === 'CHANGE_CALCULATION' && values.minuend && values.subtrahend) {
+          return `${character} pays ${this.formatPrice(values.minuend)} for an item costing ${this.formatPrice(values.subtrahend)}. How much change does ${character} get?`;
+        }
+        if (values.result) {
+          return `${character} goes shopping. What is the total cost?`;
+        }
+        break;
+
+      case 'SPORTS':
+        if (model === 'MULTIPLICATION' && values.multiplicand && values.multiplier) {
+          return `${character} buys ${values.multiplier} sports items at ${this.formatPrice(values.multiplicand)} each. How much does ${character} spend?`;
+        }
+        if (values.result) {
+          return `${character} is calculating sports scores. What is the answer?`;
+        }
+        break;
+
+      case 'COOKING':
+        if (model === 'FRACTION' && values.numerator && values.denominator) {
+          return `${character} needs ${values.numerator}/${values.denominator} of a recipe. What is this as a decimal?`;
+        }
+        if (values.result) {
+          return `${character} is following a recipe. What is the calculation?`;
+        }
+        break;
+
+      case 'SCHOOL':
+        if (model === 'ADDITION' && values.operands) {
+          return `${character} adds up school expenses: ${values.operands.map(v => this.formatPrice(v)).join(' + ')}. What is the total?`;
+        }
+        if (values.result) {
+          return `${character} is doing maths homework. What is the answer?`;
+        }
+        break;
+
+      case 'HOUSEHOLD':
+        if (values.result) {
+          return `${character} is calculating household expenses. What is the total?`;
+        }
+        break;
+    }
+
+    return null;
+  }
+
+  /**
+   * Validate and fix options to ensure numeric answers
+   */
+  private validateOptions(options: any[], definition: QuestionDefinition): any[] {
+    const correctValue = definition.solution?.correctAnswer?.value;
+
+    return options.map((option, index) => {
+      // Ensure option has valid numeric value
+      if (typeof option.value === 'number' && !isNaN(option.value)) {
+        return option;
+      }
+
+      // Try to extract numeric value from various fields
+      let numericValue: number | undefined;
+      if (typeof option === 'object' && option !== null) {
+        numericValue = option.value ?? option.answer ?? option.result;
+      }
+
+      // If still no valid value, use a fallback based on correct answer
+      if (typeof numericValue !== 'number' || isNaN(numericValue)) {
+        if (index === 0 && typeof correctValue === 'number') {
+          numericValue = correctValue;
+        } else {
+          // Generate a plausible distractor
+          numericValue = correctValue ? correctValue * (0.8 + Math.random() * 0.4) : 0;
+        }
+        console.warn(`Invalid option value detected, using fallback: ${numericValue}`);
+      }
+
+      return {
+        value: numericValue,
+        text: this.formatValue(numericValue, '£'),
+        isCorrect: index === 0
+      };
+    });
   }
 
   /**
@@ -679,26 +911,167 @@ export class QuestionRenderer {
   private fillTemplate(template: string, definition: QuestionDefinition): string {
     let filled = template;
 
-    // Replace placeholders with actual values
-    const placeholders = template.match(/\{(\w+)\}/g) || [];
+    // Build comprehensive replacement map
+    const replacements: Record<string, string> = {};
 
-    for (const placeholder of placeholders) {
-      const key = placeholder.slice(1, -1); // Remove { }
-      let value = '';
+    // Add narrative values if they exist
+    if (definition.parameters?.narrativeValues) {
+      Object.assign(replacements, definition.parameters.narrativeValues);
+    }
 
-      // Look up value from different sources
-      if (definition.parameters.narrativeValues[key]) {
-        value = definition.parameters.narrativeValues[key];
-      } else if (definition.parameters.mathValues[key]) {
-        value = String(definition.parameters.mathValues[key]);
-      } else if (key === 'character' && definition.scenario.characters.length > 0) {
-        value = definition.scenario.characters[0].name;
+    // Add math values if they exist
+    if (definition.parameters?.mathValues) {
+      Object.entries(definition.parameters.mathValues).forEach(([key, value]) => {
+        replacements[key] = String(value);
+      });
+    }
+
+    // Add character names with multiple keys for flexibility
+    if (definition.scenario?.characters?.length > 0) {
+      const characterName = definition.scenario.characters[0].name;
+      replacements.character = characterName;
+      replacements.person = characterName;
+      replacements.name = characterName;
+      replacements.student = characterName;
+    }
+
+    // Add items
+    if (definition.scenario?.items?.length > 0) {
+      replacements.items = definition.scenario.items.map((item: any) => item.name || item).join(', ');
+      replacements.item = definition.scenario.items[0]?.name || definition.scenario.items[0] || 'item';
+      // Add individual item references
+      definition.scenario.items.forEach((item: any, index: number) => {
+        replacements[`item${index + 1}`] = item.name || item;
+      });
+    }
+
+    // Add location/setting
+    if (definition.scenario?.setting) {
+      replacements.location = definition.scenario.setting.location || '';
+      replacements.place = definition.scenario.setting.location || '';
+    }
+
+    // Apply replacements for {placeholder} patterns
+    filled = filled.replace(/\{(\w+)\}/g, (match, key) => {
+      if (replacements[key] !== undefined && replacements[key] !== '') {
+        return replacements[key];
       }
 
-      filled = filled.replace(placeholder, value);
+      // Generate intelligent fallbacks for common missing values
+      const fallbackValue = this.generateFallbackValue(key, definition);
+      if (fallbackValue) {
+        console.log(`Generated fallback for ${key}: ${fallbackValue}`);
+        return fallbackValue;
+      }
+
+      console.warn(`Missing template value for key: ${key} in template: ${template.substring(0, 100)}`);
+      return match; // Keep original if no replacement found
+    });
+
+    // Handle literal "placeholder" text (fallback for malformed templates)
+    if (replacements.character) {
+      filled = filled.replace(/\bplaceholder\b/gi, replacements.character);
     }
 
     return filled;
+  }
+
+  /**
+   * Generate intelligent fallback values for missing template variables
+   */
+  private generateFallbackValue(key: string, definition: QuestionDefinition): string | null {
+    const mathValues = definition.parameters?.mathValues || {};
+    const scenario = definition.scenario;
+
+    switch (key.toLowerCase()) {
+      case 'price':
+        // Generate a price based on math values or scenario context
+        if (mathValues.result && typeof mathValues.result === 'number') {
+          return this.formatPrice(mathValues.result);
+        }
+        if (mathValues.operand_1 && typeof mathValues.operand_1 === 'number') {
+          return this.formatPrice(mathValues.operand_1);
+        }
+        // Default based on theme
+        if (scenario?.theme === 'SPORTS') return '£15';
+        if (scenario?.theme === 'SCHOOL') return '£3';
+        return '£5';
+
+      case 'quantity':
+        // Generate a quantity based on math values
+        if (mathValues.operand_2 && typeof mathValues.operand_2 === 'number') {
+          return String(mathValues.operand_2);
+        }
+        if (mathValues.multiplier && typeof mathValues.multiplier === 'number') {
+          return String(mathValues.multiplier);
+        }
+        return '2';
+
+      case 'recipe':
+        // Generate a random recipe name for cooking scenarios
+        const recipes = ['biscuits', 'cake', 'muffins', 'bread', 'pizza', 'cookies', 'scones'];
+        return recipes[Math.floor(Math.random() * recipes.length)];
+
+      case 'recipes':
+        // Alternative plural form
+        const recipeOptions = ['biscuits and cake', 'muffins and bread', 'cookies and scones'];
+        return recipeOptions[Math.floor(Math.random() * recipeOptions.length)];
+
+      case 'prices':
+        // Generate a list of prices from operands
+        if (mathValues.operands && Array.isArray(mathValues.operands)) {
+          return mathValues.operands.map((price: number) => this.formatPrice(price)).join(', ');
+        }
+        // Generate multiple prices from individual operands
+        const priceList = [];
+        if (mathValues.operand_1) priceList.push(this.formatPrice(mathValues.operand_1));
+        if (mathValues.operand_2) priceList.push(this.formatPrice(mathValues.operand_2));
+        if (priceList.length > 0) return priceList.join(', ');
+
+        // Default price list based on theme
+        if (scenario?.theme === 'COOKING') return '£2.50, £1.80, £3.20';
+        if (scenario?.theme === 'SCHOOL') return '£1.50, £2.00, £0.75';
+        return '£2, £3, £5';
+
+      case 'ingredient':
+      case 'ingredients':
+        const cookingItems = ['flour', 'sugar', 'butter', 'eggs', 'milk', 'chocolate chips'];
+        if (key === 'ingredients') {
+          return `${cookingItems[0]}, ${cookingItems[1]} and ${cookingItems[2]}`;
+        }
+        return cookingItems[Math.floor(Math.random() * cookingItems.length)];
+
+      case 'sport':
+      case 'sports':
+        const sports = ['football', 'basketball', 'tennis', 'cricket', 'rugby'];
+        return sports[Math.floor(Math.random() * sports.length)];
+
+      case 'total':
+      case 'sum':
+        if (mathValues.result && typeof mathValues.result === 'number') {
+          return this.formatPrice(mathValues.result);
+        }
+        return '£10';
+
+      case 'change':
+        if (mathValues.result && typeof mathValues.result === 'number') {
+          return this.formatPrice(mathValues.result);
+        }
+        return '£2.50';
+
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Format a number as a UK price
+   */
+  private formatPrice(amount: number): string {
+    if (amount < 1) {
+      return `${Math.round(amount * 100)}p`;
+    }
+    return `£${amount.toFixed(2)}`;
   }
 
   private generateBasicQuestion(definition: QuestionDefinition): string {

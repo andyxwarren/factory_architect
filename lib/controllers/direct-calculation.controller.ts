@@ -16,6 +16,7 @@ import {
   Distractor,
   FormattingOptions
 } from '@/lib/types/question-formats';
+import { MoneyContextGenerator } from '@/lib/story-engine/contexts/money.context';
 
 /**
  * Generates direct calculation questions like "What is 25 + 17?"
@@ -39,7 +40,8 @@ export class DirectCalculationController extends QuestionController {
     const scenario = await this.selectScenario(
       QuestionFormat.DIRECT_CALCULATION,
       params.difficulty.year,
-      params.preferredTheme
+      params.preferredTheme,
+      params.mathModel
     );
 
     // 3. Create question parameters from math output
@@ -148,10 +150,57 @@ export class DirectCalculationController extends QuestionController {
     }
     if (scenario.items && scenario.items.length > 0) {
       narrativeValues.items = scenario.items.map((item: any) => item.name);
+      narrativeValues.item = scenario.items[0]?.name || 'item';
     }
     if (scenario.setting) {
       narrativeValues.location = scenario.setting.location;
       narrativeValues.context = scenario.setting.timeContext;
+    }
+
+    // Add template-specific values based on scenario theme
+    switch (scenario.theme) {
+      case 'SPORTS':
+        // For sports scenarios, provide price and quantity
+        if (scenario.items && scenario.items.length > 0) {
+          const sportItem = scenario.items[0];
+          narrativeValues.price = MoneyContextGenerator.formatMoney(sportItem.typicalValue?.typical || 10);
+          narrativeValues.quantity = String(mathOutput.operand_2 || mathOutput.multiplier || 2);
+        }
+        break;
+
+      case 'COOKING':
+        // For cooking scenarios, provide recipe and prices
+        const recipes = ['biscuits', 'cake', 'muffins', 'bread', 'pizza'];
+        narrativeValues.recipe = recipes[Math.floor(Math.random() * recipes.length)];
+
+        if (mathOutput.operands && mathOutput.operands.length > 0) {
+          // Create formatted price list for ingredients
+          const priceList = mathOutput.operands.map((price: number) =>
+            MoneyContextGenerator.formatMoney(price)
+          ).join(', ');
+          narrativeValues.prices = priceList;
+        }
+        break;
+
+      case 'SCHOOL':
+        // For school scenarios with multiple items, handle pricing
+        if (scenario.items && scenario.items.length > 1 && mathOutput.operands) {
+          const itemPrices = scenario.items.slice(0, mathOutput.operands.length).map((item: any, index: number) => {
+            const price = mathOutput.operands[index] || item.typicalValue?.typical || 5;
+            return `${item.name} (${MoneyContextGenerator.formatMoney(price)})`;
+          }).join(', ');
+          narrativeValues.items = itemPrices;
+        }
+        break;
+
+      default:
+        // Default handling for other scenarios
+        if (mathOutput.operands && mathOutput.operands.length > 0) {
+          narrativeValues.price = MoneyContextGenerator.formatMoney(mathOutput.operands[0]);
+          if (mathOutput.operands.length > 1) {
+            narrativeValues.quantity = String(mathOutput.operands[1]);
+          }
+        }
     }
 
     // Set units based on scenario context

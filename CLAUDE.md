@@ -4,10 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Factory Architect is a TypeScript-based educational question generator for UK National Curriculum Mathematics. The project implements a sophisticated two-engine architecture:
+Factory Architect is a TypeScript-based educational question generator for UK National Curriculum Mathematics. The project implements a sophisticated **Enhanced Question Generation System** that combines mathematical accuracy with pedagogical variety through a dual architecture:
 
-- **Math Engine**: Pure mathematical models that operate on numbers and logical parameters
+### Core System (Established)
+- **Math Engine**: Pure mathematical models that operate on numbers and logical parameters (25+ models)
 - **Story Engine**: Contextual layer that wraps mathematical output with real-world scenarios
+
+### Enhanced System (New)
+- **Question Format Controllers**: 8 distinct cognitive question formats beyond basic calculation
+- **Rich Scenario Service**: 10+ themed contexts with cultural awareness
+- **Distractor Engine**: Pedagogically sound wrong answers based on common misconceptions
+- **Orchestration Layer**: Intelligent format selection and question assembly
+
+This dual architecture maintains complete backward compatibility while delivering advanced features for varied, engaging mathematical questions.
 
 ## Project Architecture
 
@@ -28,18 +37,40 @@ lib/
 │   ├── difficulty-enhanced.ts # Enhanced difficulty system with sub-levels
 │   ├── progression-tracker.ts # Adaptive learning progression
 │   └── index.ts            # Math engine exports
+├── controllers/            # Question format controllers (Enhanced System)
+│   ├── base-question.controller.ts    # Base controller with shared functionality
+│   ├── direct-calculation.controller.ts # Standard math questions
+│   ├── comparison.controller.ts        # Value comparison questions
+│   ├── estimation.controller.ts        # Rounding and approximation
+│   ├── validation.controller.ts        # True/false verification
+│   ├── multi-step.controller.ts        # Complex sequential problems
+│   ├── missing-value.controller.ts     # Find the unknown
+│   ├── ordering.controller.ts          # Sequence arrangement
+│   └── pattern.controller.ts           # Pattern recognition
+├── services/               # Enhanced system services
+│   ├── scenario.service.ts    # Rich contextual scenarios
+│   └── distractor-engine.service.ts # Pedagogical wrong answers
+├── orchestrator/           # Question orchestration
+│   └── question-orchestrator.ts # Intelligent format selection and assembly
+├── adapters/              # Backward compatibility
+│   └── legacy-adapter.ts     # Bridge between old and new systems
 ├── story-engine/
 │   ├── contexts/           # Story context libraries (money.context.ts)
-│   └── story.engine.ts     # Story rendering logic
+│   └── story.engine.ts     # Story rendering logic (Legacy)
 ├── curriculum/             # UK National Curriculum integration
 │   ├── curriculum-parser.ts
 │   └── curriculum-model-mapping.ts
+├── types/
+│   └── question-formats.ts # Enhanced system types and interfaces
 ├── types.ts               # Core TypeScript interfaces (700+ lines)
-└── types-enhanced.ts      # Enhanced system types
+└── index.ts              # Main exports
 app/
 ├── api/
-│   └── generate/           # Question generation API with batch support
+│   ├── generate/           # Legacy API endpoint
+│   ├── generate/enhanced/  # Enhanced API endpoint
+│   └── curriculum-bulk/    # Bulk curriculum generation
 ├── test/                   # Web UI for testing models
+├── curriculum-manager/     # Enhanced question management interface
 ├── layout.tsx              # App layout
 └── page.tsx               # Main dashboard
 context/                   # Curriculum data and documentation
@@ -123,9 +154,11 @@ The project uses a flexible story context system:
 - Context libraries provide themed scenarios (money, measurements, objects, etc.)
 
 ### API Architecture
-- **POST /api/generate** - Generate questions with full parameter control
+- **POST /api/generate** - Legacy endpoint for backward compatibility
+- **POST /api/generate/enhanced** - Enhanced endpoint with format selection, rich scenarios, and smart distractors
+- **POST /api/curriculum-bulk** - Bulk generation for curriculum strands with enhanced tracking
 - Supports both single question and batch generation (1-20 questions)
-- Enhanced difficulty system integration
+- Enhanced difficulty system integration with sub-level precision (X.Y format)
 - Session tracking and adaptive difficulty
 - Comprehensive error handling and validation
 
@@ -138,10 +171,9 @@ npm run dev      # Start development server at http://localhost:3000
 npm run build    # Build for production
 npm run start    # Start production server
 npm run lint     # Run ESLint
-npm run typecheck # Run TypeScript type checking (when available)
 ```
 
-**Important**: After making changes to mathematical models or type definitions, always run `npm run lint` to ensure code quality and consistency.
+**Important**: After making changes to mathematical models or type definitions, always run `npm run lint` to ensure code quality and consistency. Note: `npm run typecheck` is not available - TypeScript checking is handled during build.
 
 ## Testing Interface
 
@@ -155,9 +187,15 @@ Access the model testing interface at `/test` when running the development serve
 
 ### Critical Files
 - `lib/types.ts` - Core type definitions (700+ lines) - **READ FIRST** when working with models
+- `lib/types/question-formats.ts` - Enhanced system types and interfaces
 - `lib/math-engine/index.ts` - Main engine exports and model registry
-- `app/api/generate/route.ts` - Primary API endpoint with full feature set
+- `lib/orchestrator/question-orchestrator.ts` - Enhanced system orchestration and format selection
+- `app/api/generate/route.ts` - Legacy API endpoint (backward compatibility)
+- `app/api/generate/enhanced/route.ts` - Enhanced API endpoint with full features
+- `app/api/curriculum-bulk/route.ts` - Bulk curriculum generation
 - `context/CURRICULUM_DATA.md` - UK National Curriculum mapping
+- `FEATURES.md` - Complete feature documentation and usage examples
+- `ARCHITECTURE.md` - Detailed system design and implementation
 
 ### Model Implementation Pattern
 All mathematical models follow this structure:
@@ -183,18 +221,59 @@ export class ModelNameModel implements IMathModel<ModelParams, ModelOutput> {
 
 ### Testing Strategy
 - **Web Interface**: `/test` page for interactive model testing
+- **Curriculum Manager**: `/curriculum-manager` for enhanced question management interface
 - **Batch Testing**: Generate 1-20 questions for statistical analysis
 - **Parameter Validation**: API validates all inputs with detailed error messages
 - **Real-time Feedback**: Immediate generation time and success metrics
 
+## Enhanced Question Generation System
+
+### 8 Question Formats
+1. **DIRECT_CALCULATION**: Standard computation ("What is 25 + 17?")
+2. **COMPARISON**: Compare values or quantities ("Which is better value?")
+3. **ESTIMATION**: Round or approximate results ("Estimate the capacity")
+4. **VALIDATION**: Check if calculation is correct ("Do you have enough money?")
+5. **MULTI_STEP**: Sequential problem solving (Multiple calculations required)
+6. **MISSING_VALUE**: Find the unknown variable ("Find the missing number")
+7. **ORDERING**: Arrange in sequence ("Order from smallest to largest")
+8. **PATTERN_RECOGNITION**: Identify and extend patterns ("What comes next?")
+
+### Rich Contextual Scenarios
+- **10+ Themed Contexts**: Shopping, School, Sports, Cooking, Pocket Money, Transport, Collections, Nature, Household, Celebrations
+- **Cultural Awareness**: UK-specific currency, measurements, and cultural references
+- **Dynamic Generation**: Procedural scenario creation based on year level and theme
+- **Model-Theme Compatibility**: Intelligent pairing of mathematical models with appropriate contexts
+
+### Pedagogical Enhancements
+- **Smart Distractors**: 8 strategies for generating educationally meaningful wrong answers
+- **Misconception Library**: Based on common student errors and cognitive patterns
+- **Cognitive Load Tracking**: Difficulty scoring from 0-100 for adaptive learning
+- **Generation Tracking**: Complete pipeline visibility for debugging and optimization
+
+### Controller Architecture
+Each question format is handled by a specialized controller:
+- All controllers extend `QuestionController` base class
+- Consistent interface for question generation, parameter handling, and scenario integration
+- Format-specific logic for question text generation, answer calculation, and distractor generation
+- Model-format compatibility matrix ensures appropriate pairings
+
 ## Development Workflow
 
+### Legacy System (Mathematical Models)
 1. **New Models**: Implement in `lib/math-engine/models/` following the `IMathModel` interface
 2. **Type Definitions**: Add interfaces to `lib/types.ts` with proper TypeScript typing
 3. **Registration**: Add model to the registry in `lib/math-engine/index.ts`
 4. **Testing**: Use `/test` interface for parameter tuning and validation
 5. **Story Contexts**: Create context generators in `lib/story-engine/contexts/`
 6. **Integration**: Test via API endpoint with various difficulty parameters
+
+### Enhanced System (Question Formats & Controllers)
+1. **New Controllers**: Implement in `lib/controllers/` extending `QuestionController`
+2. **Enhanced Types**: Add interfaces to `lib/types/question-formats.ts`
+3. **Orchestrator Integration**: Register controller in `question-orchestrator.ts`
+4. **Scenario Enhancement**: Add scenarios to `scenario.service.ts`
+5. **Distractor Logic**: Implement format-specific distractors in controllers
+6. **Testing**: Use `/curriculum-manager` for comprehensive testing
 
 ### Code Quality Standards
 - **Type Safety**: All models must implement proper TypeScript interfaces
