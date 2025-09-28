@@ -73,17 +73,57 @@ export abstract class QuestionController {
   }
 
   /**
-   * Common scenario selection logic
+   * Common scenario selection logic - object parameter overload
+   */
+  protected async selectScenario(params: {
+    theme?: ScenarioTheme;
+    mathModel?: string;
+    difficulty?: any;
+    culturalContext?: string;
+    format?: QuestionFormat;
+  }): Promise<ScenarioContext>;
+
+  /**
+   * Common scenario selection logic - individual parameters
    */
   protected async selectScenario(
     format: QuestionFormat,
     yearLevel: number,
     theme?: ScenarioTheme,
     mathModel?: string
+  ): Promise<ScenarioContext>;
+
+  /**
+   * Common scenario selection logic implementation
+   */
+  protected async selectScenario(
+    formatOrParams: QuestionFormat | {
+      theme?: ScenarioTheme;
+      mathModel?: string;
+      difficulty?: any;
+      culturalContext?: string;
+      format?: QuestionFormat;
+    },
+    yearLevel?: number,
+    theme?: ScenarioTheme,
+    mathModel?: string
   ): Promise<ScenarioContext> {
+    // Handle object parameter style (new style)
+    if (typeof formatOrParams === 'object') {
+      const params = formatOrParams;
+      return this.scenarioService.selectScenario({
+        format: params.format || QuestionFormat.DIRECT_CALCULATION,
+        yearLevel: params.difficulty?.year || 3,
+        theme: params.theme,
+        mathModel: params.mathModel,
+        culturalContext: params.culturalContext || 'UK'
+      });
+    }
+
+    // Handle individual parameters style (original style)
     return this.scenarioService.selectScenario({
-      format,
-      yearLevel,
+      format: formatOrParams,
+      yearLevel: yearLevel || 3,
       theme,
       mathModel,
       culturalContext: 'UK'
@@ -275,6 +315,13 @@ export abstract class QuestionController {
     } else {
       return `${Math.round(value * 100)}p`;
     }
+  }
+
+  /**
+   * Format price values (alias for formatCurrency for compatibility)
+   */
+  protected formatPrice(value: number): string {
+    return this.formatCurrency(value);
   }
 }
 

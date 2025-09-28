@@ -1140,6 +1140,39 @@ export class QuestionRenderer {
   private findCorrectIndex(options: QuestionOption[], correctAnswer: any): number {
     return options.findIndex(option => option.value === correctAnswer.value);
   }
+
+  /**
+   * Format values according to context (from base controller)
+   */
+  private formatValue(value: number, units?: string, decimalPlaces: number = 2): string {
+    if (units === '£' || units === 'pounds') {
+      return this.formatCurrency(value);
+    }
+
+    if (Number.isInteger(value)) {
+      return value.toString();
+    }
+
+    return value.toFixed(decimalPlaces);
+  }
+
+  /**
+   * Format currency values (from base controller)
+   */
+  private formatCurrency(value: number): string {
+    if (value >= 1) {
+      return `£${value.toFixed(2)}`;
+    } else {
+      return `${Math.round(value * 100)}p`;
+    }
+  }
+
+  /**
+   * Format price values (alias for formatCurrency for compatibility)
+   */
+  private formatPrice(value: number): string {
+    return this.formatCurrency(value);
+  }
 }
 
 /**

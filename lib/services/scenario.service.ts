@@ -105,6 +105,16 @@ export class ScenarioService {
         return this.generateSportsScenario(yearLevel);
       case ScenarioTheme.COOKING:
         return this.generateCookingScenario(yearLevel);
+      case ScenarioTheme.NATURE:
+        return this.generateNatureScenario(yearLevel);
+      case ScenarioTheme.TRANSPORT:
+        return this.generateTransportScenario(yearLevel);
+      case ScenarioTheme.COLLECTIONS:
+        return this.generateCollectionsScenario(yearLevel);
+      case ScenarioTheme.HOUSEHOLD:
+        return this.generateHouseholdScenario(yearLevel);
+      case ScenarioTheme.CELEBRATIONS:
+        return this.generateCelebrationsScenario(yearLevel);
       default:
         return this.getDefaultScenario(yearLevel);
     }
@@ -537,6 +547,297 @@ export class ScenarioService {
             { key: 'character', type: 'character' as const },
             { key: 'item', type: 'item' as const },
             { key: 'price', type: 'value' as const },
+            { key: 'result', type: 'value' as const }
+          ]
+        }
+      ]
+    };
+  }
+
+  /**
+   * Generate nature scenario dynamically
+   */
+  private generateNatureScenario(year: number): ScenarioContext {
+    const natureItems = ['flower', 'leaf', 'stone', 'stick', 'acorn', 'feather', 'shell', 'pine cone'];
+    const locations = ['park', 'forest', 'beach', 'garden', 'nature reserve'];
+
+    return {
+      id: `nature-${year}-${Date.now()}`,
+      theme: ScenarioTheme.NATURE,
+      setting: {
+        location: locations[Math.floor(Math.random() * locations.length)],
+        timeContext: 'outdoor exploration',
+        atmosphere: 'peaceful'
+      },
+      characters: [
+        { name: this.selectRandomName(), role: 'student' },
+        { name: 'Mr. Green', role: 'park ranger' }
+      ],
+      items: natureItems.map(item => ({
+        name: item,
+        category: ItemCategory.NATURE_ITEMS,
+        typicalValue: {
+          min: 1,
+          max: 20,
+          typical: 5,
+          distribution: 'normal' as const
+        },
+        unit: 'items',
+        attributes: {
+          quality: 'standard' as const
+        }
+      })),
+      culturalElements: [
+        {
+          type: 'location' as const,
+          value: 'UK countryside',
+          explanation: 'British natural environments'
+        }
+      ],
+      realWorldConnection: 'Counting and collecting in nature',
+      yearAppropriate: [year],
+      templates: [
+        {
+          formatCompatibility: [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.COMPARISON],
+          template: '{character} collected {items} while exploring. How many items in total?',
+          answerTemplate: '{character} collected {result} items',
+          placeholders: [
+            { key: 'character', type: 'character' as const },
+            { key: 'items', type: 'item' as const },
+            { key: 'result', type: 'value' as const }
+          ]
+        }
+      ]
+    };
+  }
+
+  /**
+   * Generate transport scenario dynamically
+   */
+  private generateTransportScenario(year: number): ScenarioContext {
+    const transportTypes = ['bus', 'train', 'taxi', 'tube', 'bike'];
+    const destinations = ['school', 'town centre', 'hospital', 'shopping centre', 'park'];
+
+    return {
+      id: `transport-${year}-${Date.now()}`,
+      theme: ScenarioTheme.TRANSPORT,
+      setting: {
+        location: 'transport hub',
+        timeContext: 'journey planning',
+        atmosphere: 'busy'
+      },
+      characters: [
+        { name: this.selectRandomName(), role: 'passenger' },
+        { name: 'Mrs. Driver', role: 'transport operator' }
+      ],
+      items: transportTypes.map(transport => ({
+        name: transport,
+        category: ItemCategory.TRANSPORT,
+        typicalValue: {
+          min: 1.50,
+          max: 15.00,
+          typical: 5.00,
+          distribution: 'normal' as const
+        },
+        unit: '£',
+        attributes: {
+          quality: 'standard' as const
+        }
+      })),
+      culturalElements: [
+        {
+          type: 'currency' as const,
+          value: '£',
+          explanation: 'British pounds for transport fares'
+        }
+      ],
+      realWorldConnection: 'Calculating travel costs and distances',
+      yearAppropriate: [year],
+      templates: [
+        {
+          formatCompatibility: [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.MULTI_STEP],
+          template: 'A {transport} journey costs {price}. How much for {quantity} journeys?',
+          answerTemplate: 'The total cost is {result}',
+          placeholders: [
+            { key: 'transport', type: 'item' as const },
+            { key: 'price', type: 'value' as const },
+            { key: 'quantity', type: 'value' as const },
+            { key: 'result', type: 'value' as const }
+          ]
+        }
+      ]
+    };
+  }
+
+  /**
+   * Generate collections scenario dynamically
+   */
+  private generateCollectionsScenario(year: number): ScenarioContext {
+    const collectibles = ['sticker', 'card', 'coin', 'stamp', 'badge', 'marble', 'button'];
+
+    return {
+      id: `collections-${year}-${Date.now()}`,
+      theme: ScenarioTheme.COLLECTIONS,
+      setting: {
+        location: 'bedroom',
+        timeContext: 'organizing collection',
+        atmosphere: 'focused'
+      },
+      characters: [
+        { name: this.selectRandomName(), role: 'collector' },
+        { name: this.selectRandomName(), role: 'friend' }
+      ],
+      items: collectibles.map(item => ({
+        name: item,
+        category: ItemCategory.COLLECTIBLES,
+        typicalValue: {
+          min: 1,
+          max: 50,
+          typical: 10,
+          distribution: 'normal' as const
+        },
+        unit: 'items',
+        attributes: {
+          quality: 'standard' as const
+        }
+      })),
+      culturalElements: [
+        {
+          type: 'hobby' as const,
+          value: 'collecting',
+          explanation: 'Popular childhood hobby'
+        }
+      ],
+      realWorldConnection: 'Organizing and counting collections',
+      yearAppropriate: [year],
+      templates: [
+        {
+          formatCompatibility: [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.ORDERING],
+          template: '{character} has {items} in their collection. How many altogether?',
+          answerTemplate: '{character} has {result} items total',
+          placeholders: [
+            { key: 'character', type: 'character' as const },
+            { key: 'items', type: 'item' as const },
+            { key: 'result', type: 'value' as const }
+          ]
+        }
+      ]
+    };
+  }
+
+  /**
+   * Generate household scenario dynamically
+   */
+  private generateHouseholdScenario(year: number): ScenarioContext {
+    const householdItems = ['cup', 'plate', 'spoon', 'towel', 'pillow', 'book', 'toy', 'sock'];
+    const rooms = ['kitchen', 'bedroom', 'living room', 'bathroom'];
+
+    return {
+      id: `household-${year}-${Date.now()}`,
+      theme: ScenarioTheme.HOUSEHOLD,
+      setting: {
+        location: rooms[Math.floor(Math.random() * rooms.length)],
+        timeContext: 'tidying up',
+        atmosphere: 'homely'
+      },
+      characters: [
+        { name: this.selectRandomName(), role: 'child' },
+        { name: 'Mum', role: 'parent' }
+      ],
+      items: householdItems.map(item => ({
+        name: item,
+        category: ItemCategory.HOUSEHOLD_ITEMS,
+        typicalValue: {
+          min: 1,
+          max: 30,
+          typical: 8,
+          distribution: 'normal' as const
+        },
+        unit: 'items',
+        attributes: {
+          quality: 'standard' as const
+        }
+      })),
+      culturalElements: [
+        {
+          type: 'custom' as const,
+          value: 'household chores',
+          explanation: 'Daily home activities'
+        }
+      ],
+      realWorldConnection: 'Organizing and counting household items',
+      yearAppropriate: [year],
+      templates: [
+        {
+          formatCompatibility: [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.COMPARISON],
+          template: '{character} needs to tidy {items}. How many items to put away?',
+          answerTemplate: '{character} needs to put away {result} items',
+          placeholders: [
+            { key: 'character', type: 'character' as const },
+            { key: 'items', type: 'item' as const },
+            { key: 'result', type: 'value' as const }
+          ]
+        }
+      ]
+    };
+  }
+
+  /**
+   * Generate celebrations scenario dynamically
+   */
+  private generateCelebrationsScenario(year: number): ScenarioContext {
+    const celebrations = ['birthday party', 'Christmas', 'Easter', 'Halloween', 'school fair'];
+    const partyItems = ['balloon', 'cake', 'present', 'decoration', 'party hat', 'candle'];
+
+    return {
+      id: `celebrations-${year}-${Date.now()}`,
+      theme: ScenarioTheme.CELEBRATIONS,
+      setting: {
+        location: 'party venue',
+        timeContext: 'celebration planning',
+        atmosphere: 'festive'
+      },
+      characters: [
+        { name: this.selectRandomName(), role: 'party organizer' },
+        { name: this.selectRandomName(), role: 'guest' }
+      ],
+      items: partyItems.map(item => ({
+        name: item,
+        category: ItemCategory.PARTY_SUPPLIES,
+        typicalValue: {
+          min: 0.50,
+          max: 20.00,
+          typical: 5.00,
+          distribution: 'normal' as const
+        },
+        unit: '£',
+        attributes: {
+          quality: 'standard' as const
+        }
+      })),
+      culturalElements: [
+        {
+          type: 'currency' as const,
+          value: '£',
+          explanation: 'British pounds for party supplies'
+        },
+        {
+          type: 'event' as const,
+          value: 'celebration',
+          explanation: 'Special occasions and festivals'
+        }
+      ],
+      realWorldConnection: 'Planning and budgeting for celebrations',
+      yearAppropriate: [year],
+      templates: [
+        {
+          formatCompatibility: [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.MULTI_STEP],
+          template: '{character} is planning a {celebration}. The supplies cost {prices}. What is the total?',
+          answerTemplate: 'The total cost is {result}',
+          placeholders: [
+            { key: 'character', type: 'character' as const },
+            { key: 'celebration', type: 'event' as const },
+            { key: 'prices', type: 'value' as const },
             { key: 'result', type: 'value' as const }
           ]
         }

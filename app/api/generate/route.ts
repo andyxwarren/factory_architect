@@ -21,6 +21,7 @@ interface EnhancedGenerateRequest extends GenerateRequest {
   adaptive_mode?: boolean; // Enable adaptive difficulty
   confidence_mode?: boolean; // Enable confidence mode
   quantity?: number; // Number of questions to generate in batch
+  scenario_theme?: string; // Theme for scenario selection
 }
 
 // Initialize enhanced system components for legacy compatibility
@@ -56,7 +57,8 @@ export async function POST(req: NextRequest) {
       session_id,
       adaptive_mode = false,
       confidence_mode = false,
-      quantity = 1
+      quantity = 1,
+      scenario_theme
     } = body;
 
     // Validate model exists
@@ -88,7 +90,8 @@ export async function POST(req: NextRequest) {
       format_preference: 'DIRECT_CALCULATION' as any, // Force direct calculation for legacy compatibility
       difficulty_params,
       session_id,
-      cultural_context: 'UK'
+      cultural_context: 'UK',
+      scenario_theme
     };
 
     const startTime = Date.now();
@@ -118,19 +121,27 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json(legacyQuestion);
     } else {
-      // Batch question generation
+      // Batch question generation with retry logic
       const enhancedQuestions = [];
       let successCount = 0;
+      const maxAttempts = quantity * 3; // Allow up to 3x attempts to get requested quantity
+      let attempts = 0;
 
-      for (let i = 0; i < quantity; i++) {
+      while (successCount < quantity && attempts < maxAttempts) {
         try {
           const enhancedQuestion = await orchestrator.generateQuestion(enhancedRequest);
           enhancedQuestions.push(enhancedQuestion);
           successCount++;
         } catch (error) {
-          console.warn(`Failed to generate question ${i + 1}:`, error);
-          // Continue with other questions
+          console.warn(`Failed to generate question (attempt ${attempts + 1}):`, error);
+          // Continue attempting to generate more questions
         }
+        attempts++;
+      }
+
+      // Log final statistics
+      if (successCount < quantity) {
+        console.warn(`Batch generation incomplete: ${successCount}/${quantity} questions generated after ${attempts} attempts`);
       }
 
       const endTime = Date.now();
@@ -158,6 +169,9 @@ export async function POST(req: NextRequest) {
         questions: legacyQuestions,
         batch_metadata: {
           quantity: successCount,
+          requested_quantity: quantity,
+          success_rate: successCount / quantity,
+          total_attempts: attempts,
           total_generation_time_ms: totalTime,
           average_generation_time_ms: totalTime / Math.max(successCount, 1),
           model_id,
