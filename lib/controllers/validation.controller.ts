@@ -159,7 +159,8 @@ export class ValidationController extends QuestionController {
         workingSteps: this.generateTrueFalseSteps(mathOutput, presentedAnswer, correctAnswer, statementIsTrue),
         explanation: statementIsTrue
           ? `The calculation is correct: ${presentedAnswer}`
-          : `The calculation is incorrect. The correct answer is ${correctAnswer}, not ${presentedAnswer}`
+          : `The calculation is incorrect. The correct answer is ${correctAnswer}, not ${presentedAnswer}`,
+        solutionStrategy: 'Verify the calculation and determine if the statement is true or false'
       }
     } as QuestionDefinition;
   }
@@ -200,6 +201,10 @@ export class ValidationController extends QuestionController {
         hasError,
         correctAnswer
       },
+      questionContent: {
+        fullText: questionText,
+        components: undefined
+      },
       solution: {
         correctAnswer: {
           value: correctAnswer,  // Return the actual numeric answer
@@ -210,7 +215,8 @@ export class ValidationController extends QuestionController {
         workingSteps: this.generateCheckWorkExplanation(workingSteps, hasError, correctAnswer),
         explanation: hasError
           ? `The working contains an error. The correct answer should be ${correctAnswer}`
-          : `The working is correct and gives the right answer: ${correctAnswer}`
+          : `The working is correct and gives the right answer: ${correctAnswer}`,
+        solutionStrategy: 'Check each step of the working to verify correctness'
       }
     } as QuestionDefinition;
   }
@@ -250,6 +256,10 @@ export class ValidationController extends QuestionController {
         errorStep,
         correctAnswer
       },
+      questionContent: {
+        fullText: questionText,
+        components: undefined
+      },
       solution: {
         correctAnswer: {
           value: `Step ${errorStep + 1}`,
@@ -258,7 +268,8 @@ export class ValidationController extends QuestionController {
         },
         distractors,
         workingSteps: [`The error is in step ${errorStep + 1}`, `Correct answer: ${correctAnswer}`],
-        explanation: `The error occurs in step ${errorStep + 1}. The correct calculation gives ${correctAnswer}`
+        explanation: `The error occurs in step ${errorStep + 1}. The correct calculation gives ${correctAnswer}`,
+        solutionStrategy: 'Identify which step contains the error'
       }
     } as QuestionDefinition;
   }
@@ -297,11 +308,20 @@ export class ValidationController extends QuestionController {
         answerOptions,
         correctAnswer
       },
+      questionContent: {
+        fullText: questionText,
+        components: undefined
+      },
       solution: {
-        correctAnswer,
+        correctAnswer: {
+          value: correctAnswer,
+          displayText: this.formatValue(correctAnswer, '£'),
+          units: '£'
+        },
         distractors,
         workingSteps: this.generateVerificationSteps(mathOutput, correctAnswer),
-        explanation: `The correct answer is ${correctAnswer}`
+        explanation: `The correct answer is ${correctAnswer}`,
+        solutionStrategy: 'Verify which of the presented answers is correct'
       }
     } as QuestionDefinition;
   }

@@ -89,25 +89,107 @@ export class DirectCalculationController extends QuestionController {
     const narrativeValues: Record<string, any> = {};
     const units: Record<string, string> = {};
 
+    // Defensive null checks
+    if (!mathOutput) {
+      throw new Error('mathOutput is required');
+    }
+    if (!scenario) {
+      throw new Error('scenario is required');
+    }
+    if (!mathOutput.operation) {
+      throw new Error('mathOutput.operation is required');
+    }
+
     // Extract mathematical values based on operation type
     switch (mathOutput.operation) {
       case 'ADDITION':
-        mathOutput.operands.forEach((operand: number, index: number) => {
-          mathValues[`operand_${index + 1}`] = operand;
-        });
-        mathValues.result = mathOutput.result;
+        // Handle both operands array format and individual operand properties
+        if (mathOutput.operands && Array.isArray(mathOutput.operands)) {
+          // Array format: [5, 3, 7] -> operand_1: 5, operand_2: 3, operand_3: 7
+          mathOutput.operands.forEach((operand: number, index: number) => {
+            mathValues[`operand_${index + 1}`] = operand;
+          });
+        } else {
+          // Individual properties format: operand_1: 5, operand_2: 3, operand_3: 7
+          for (let i = 1; i <= 10; i++) { // Check up to 10 operands
+            const operandKey = `operand_${i}`;
+            if (mathOutput[operandKey] !== undefined) {
+              mathValues[operandKey] = mathOutput[operandKey];
+            }
+          }
+        }
+        if (mathOutput.result !== undefined) {
+          mathValues.result = mathOutput.result;
+        }
+
+        // Add formatted placeholders for templates
+        const isMoney = scenario.theme === 'SHOPPING' || mathOutput.operation.includes('MONEY');
+        if (mathOutput.operands && Array.isArray(mathOutput.operands)) {
+          // Array format
+          mathOutput.operands.forEach((operand: number, index: number) => {
+            if (isMoney) {
+              narrativeValues[`price${index + 1}`] = MoneyContextGenerator.formatMoney(operand);
+            } else {
+              narrativeValues[`price${index + 1}`] = String(operand);
+            }
+          });
+        } else {
+          // Individual properties format
+          for (let i = 1; i <= 10; i++) {
+            const operandKey = `operand_${i}`;
+            if (mathOutput[operandKey] !== undefined) {
+              if (isMoney) {
+                narrativeValues[`price${i}`] = MoneyContextGenerator.formatMoney(mathOutput[operandKey]);
+              } else {
+                narrativeValues[`price${i}`] = String(mathOutput[operandKey]);
+              }
+            }
+          }
+        }
+
+        // Add operand count for template selection
+        if (mathOutput.operands && Array.isArray(mathOutput.operands)) {
+          narrativeValues.operandCount = mathOutput.operands.length;
+        } else {
+          // Count individual operand properties
+          let operandCount = 0;
+          for (let i = 1; i <= 10; i++) {
+            if (mathOutput[`operand_${i}`] !== undefined) {
+              operandCount = i;
+            }
+          }
+          narrativeValues.operandCount = operandCount;
+        }
         break;
 
       case 'SUBTRACTION':
         mathValues.minuend = mathOutput.minuend;
         mathValues.subtrahend = mathOutput.subtrahend;
         mathValues.result = mathOutput.result;
+
+        // Add formatted placeholders for templates (payment and change scenarios)
+        const isMoneySubtraction = scenario.theme === 'SHOPPING' || mathOutput.operation.includes('MONEY');
+        if (mathOutput.subtrahend !== undefined) {
+          narrativeValues['price'] = isMoneySubtraction ? MoneyContextGenerator.formatMoney(mathOutput.subtrahend) : String(mathOutput.subtrahend);
+        }
+        if (mathOutput.minuend !== undefined) {
+          narrativeValues['payment'] = isMoneySubtraction ? MoneyContextGenerator.formatMoney(mathOutput.minuend) : String(mathOutput.minuend);
+        }
         break;
 
       case 'MULTIPLICATION':
         mathValues.multiplicand = mathOutput.multiplicand;
         mathValues.multiplier = mathOutput.multiplier;
         mathValues.result = mathOutput.result;
+
+        // Add formatted placeholders for templates (quantity and unit price scenarios)
+        const isMoneyMultiplication = scenario.theme === 'SHOPPING' || mathOutput.operation.includes('MONEY');
+        if (mathOutput.multiplier !== undefined) {
+          narrativeValues['quantity'] = String(mathOutput.multiplier);
+        }
+        if (mathOutput.multiplicand !== undefined) {
+          narrativeValues['price'] = isMoneyMultiplication ? MoneyContextGenerator.formatMoney(mathOutput.multiplicand) : String(mathOutput.multiplicand);
+        }
         break;
 
       case 'DIVISION':
@@ -116,6 +198,15 @@ export class DirectCalculationController extends QuestionController {
         mathValues.quotient = mathOutput.quotient;
         if (mathOutput.remainder) {
           mathValues.remainder = mathOutput.remainder;
+        }
+
+        // Add formatted placeholders for templates (total and quantity scenarios)
+        const isMoneyDivision = scenario.theme === 'SHOPPING' || mathOutput.operation.includes('MONEY');
+        if (mathOutput.dividend !== undefined) {
+          narrativeValues['total'] = isMoneyDivision ? MoneyContextGenerator.formatMoney(mathOutput.dividend) : String(mathOutput.dividend);
+        }
+        if (mathOutput.divisor !== undefined) {
+          narrativeValues['quantity'] = String(mathOutput.divisor);
         }
         break;
 
@@ -129,6 +220,164 @@ export class DirectCalculationController extends QuestionController {
         mathValues.whole_value = mathOutput.whole_value;
         mathValues.numerator = mathOutput.fraction.numerator;
         mathValues.denominator = mathOutput.fraction.denominator;
+        mathValues.result = mathOutput.result;
+        break;
+
+      case 'COUNTING':
+        mathValues.start_value = mathOutput.start_value;
+        mathValues.count = mathOutput.count;
+        mathValues.step_size = mathOutput.step_size;
+        mathValues.result = mathOutput.result;
+        if (mathOutput.sequence) {
+          mathValues.sequence_length = mathOutput.sequence.length;
+        }
+        break;
+
+      case 'TIME_RATE':
+        mathValues.time = mathOutput.time;
+        mathValues.rate = mathOutput.rate;
+        mathValues.distance = mathOutput.distance || mathOutput.result;
+        mathValues.result = mathOutput.result;
+        break;
+
+      case 'CONVERSION':
+        mathValues.original_value = mathOutput.original_value;
+        mathValues.converted_value = mathOutput.converted_value || mathOutput.result;
+        mathValues.conversion_factor = mathOutput.conversion_factor;
+        mathValues.result = mathOutput.result;
+        units.original = mathOutput.original_unit;
+        units.converted = mathOutput.converted_unit;
+        break;
+
+      case 'COMPARISON':
+        if (mathOutput.values && Array.isArray(mathOutput.values)) {
+          mathOutput.values.forEach((value: number, index: number) => {
+            mathValues[`value_${index + 1}`] = value;
+          });
+        }
+        mathValues.comparison_type = mathOutput.comparison_type;
+        mathValues.result = mathOutput.result;
+        break;
+
+      case 'LINEAR_EQUATION':
+        mathValues.slope = mathOutput.slope || mathOutput.m;
+        mathValues.intercept = mathOutput.intercept || mathOutput.c;
+        mathValues.input = mathOutput.input || mathOutput.x;
+        mathValues.output = mathOutput.output || mathOutput.y;
+        mathValues.result = mathOutput.result;
+        break;
+
+      case 'UNIT_RATE':
+        mathValues.quantity = mathOutput.quantity;
+        mathValues.total_cost = mathOutput.total_cost;
+        mathValues.unit_price = mathOutput.unit_price || mathOutput.result;
+        mathValues.result = mathOutput.result;
+        break;
+
+      case 'COIN_RECOGNITION':
+        if (mathOutput.coins && Array.isArray(mathOutput.coins)) {
+          mathOutput.coins.forEach((coin: any, index: number) => {
+            mathValues[`coin_${index + 1}_value`] = coin.value;
+            mathValues[`coin_${index + 1}_count`] = coin.count;
+          });
+        }
+        mathValues.total_value = mathOutput.total_value || mathOutput.result;
+        mathValues.result = mathOutput.result;
+        units.result = '£';
+        break;
+
+      case 'CHANGE_CALCULATION':
+        mathValues.purchase_amount = mathOutput.purchase_amount;
+        mathValues.payment = mathOutput.payment;
+        mathValues.change = mathOutput.change || mathOutput.result;
+        mathValues.result = mathOutput.result;
+        units.result = '£';
+        break;
+
+      case 'MONEY_COMBINATIONS':
+        mathValues.target_amount = mathOutput.target_amount;
+        if (mathOutput.combinations) {
+          mathValues.combination_count = mathOutput.combinations.length;
+        }
+        if (mathOutput.coins_used && Array.isArray(mathOutput.coins_used)) {
+          mathOutput.coins_used.forEach((coin: any, index: number) => {
+            mathValues[`coin_${index + 1}`] = coin;
+          });
+        }
+        mathValues.result = mathOutput.result;
+        units.result = '£';
+        break;
+
+      case 'MONEY_SCALING':
+        mathValues.base_amount = mathOutput.base_amount;
+        mathValues.scale_factor = mathOutput.scale_factor || mathOutput.multiplier;
+        mathValues.result = mathOutput.result;
+        units.result = '£';
+        break;
+
+      case 'SHAPE_RECOGNITION':
+        mathValues.shape_count = mathOutput.shape_count;
+        mathValues.sides = mathOutput.sides;
+        if (mathOutput.shape_name) {
+          narrativeValues.shape_name = mathOutput.shape_name;
+        }
+        mathValues.result = mathOutput.result;
+        break;
+
+      case 'SHAPE_PROPERTIES':
+        mathValues.sides = mathOutput.sides;
+        mathValues.vertices = mathOutput.vertices;
+        mathValues.angles = mathOutput.angles;
+        if (mathOutput.shape_name) {
+          narrativeValues.shape_name = mathOutput.shape_name;
+        }
+        mathValues.result = mathOutput.result;
+        break;
+
+      case 'ANGLE_MEASUREMENT':
+        mathValues.angle_degrees = mathOutput.angle_degrees || mathOutput.angle;
+        mathValues.angle_type = mathOutput.angle_type;
+        if (mathOutput.complementary) {
+          mathValues.complementary = mathOutput.complementary;
+        }
+        if (mathOutput.supplementary) {
+          mathValues.supplementary = mathOutput.supplementary;
+        }
+        mathValues.result = mathOutput.result;
+        units.result = '°';
+        break;
+
+      case 'POSITION_DIRECTION':
+        mathValues.x_coordinate = mathOutput.x_coordinate || mathOutput.x;
+        mathValues.y_coordinate = mathOutput.y_coordinate || mathOutput.y;
+        if (mathOutput.direction) {
+          narrativeValues.direction = mathOutput.direction;
+        }
+        if (mathOutput.distance) {
+          mathValues.distance = mathOutput.distance;
+        }
+        mathValues.result = mathOutput.result;
+        break;
+
+      case 'AREA_PERIMETER':
+        mathValues.length = mathOutput.length;
+        mathValues.width = mathOutput.width;
+        mathValues.area = mathOutput.area;
+        mathValues.perimeter = mathOutput.perimeter;
+        mathValues.result = mathOutput.result;
+        if (mathOutput.calculation_type === 'area') {
+          units.result = 'cm²';
+        } else if (mathOutput.calculation_type === 'perimeter') {
+          units.result = 'cm';
+        }
+        break;
+
+      case 'MULTI_STEP':
+        if (mathOutput.steps && Array.isArray(mathOutput.steps)) {
+          mathOutput.steps.forEach((step: any, index: number) => {
+            mathValues[`step_${index + 1}_result`] = step.result;
+          });
+        }
         mathValues.result = mathOutput.result;
         break;
 

@@ -45,7 +45,9 @@
       "Bash(taskkill:*)",
       "Bash(npx eslint:*)",
       "Bash(find:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(bash:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": [],

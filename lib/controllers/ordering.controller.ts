@@ -125,6 +125,10 @@ export class OrderingController extends QuestionController {
         },
         valuesToOrder
       },
+      questionContent: {
+        fullText: questionText,
+        components: undefined
+      },
       solution: {
         correctAnswer: {
           value: correctOrder,
@@ -133,7 +137,8 @@ export class OrderingController extends QuestionController {
         },
         distractors,
         workingSteps: this.generateOrderingSteps(valuesToOrder, correctOrder, orderingParams),
-        explanation: this.generateOrderingExplanation(valuesToOrder, correctOrder, orderingParams)
+        explanation: this.generateOrderingExplanation(valuesToOrder, correctOrder, orderingParams),
+        solutionStrategy: 'Compare each value and arrange according to order direction'
       }
     } as QuestionDefinition;
   }

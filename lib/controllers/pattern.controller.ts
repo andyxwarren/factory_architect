@@ -104,6 +104,10 @@ export class PatternController extends QuestionController {
         questionSequence,
         missingValues
       },
+      questionContent: {
+        fullText: questionText,
+        components: undefined
+      },
       solution: {
         correctAnswer: {
           value: missingValues.length === 1 ? missingValues[0] : missingValues,
@@ -112,7 +116,8 @@ export class PatternController extends QuestionController {
         },
         distractors,
         workingSteps: this.generatePatternSteps(fullSequence, patternParams),
-        explanation: this.generatePatternExplanation(patternParams, missingValues)
+        explanation: this.generatePatternExplanation(patternParams, missingValues),
+        solutionStrategy: 'Identify the pattern rule and apply it to find missing values'
       }
     } as QuestionDefinition;
   }

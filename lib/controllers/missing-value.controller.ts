@@ -133,6 +133,10 @@ export class MissingValueController extends QuestionController {
         equation,
         missingValue: missingValueParams.missingValue
       },
+      questionContent: {
+        fullText: questionText,
+        components: undefined
+      },
       solution: {
         correctAnswer: {
           value: missingValueParams.missingValue,
@@ -141,7 +145,8 @@ export class MissingValueController extends QuestionController {
         },
         distractors,
         workingSteps: this.generateSolutionSteps(equation, missingValueParams),
-        explanation: this.generateExplanation(equation, missingValueParams)
+        explanation: this.generateExplanation(equation, missingValueParams),
+        solutionStrategy: 'Work backwards from the equation to find the missing value'
       }
     } as QuestionDefinition;
   }
@@ -185,6 +190,10 @@ export class MissingValueController extends QuestionController {
         equation,
         missingValue: missingValueParams.missingValue
       },
+      questionContent: {
+        fullText: questionText,
+        components: undefined
+      },
       solution: {
         correctAnswer: {
           value: missingValueParams.missingValue,
@@ -193,7 +202,8 @@ export class MissingValueController extends QuestionController {
         },
         distractors,
         workingSteps: this.generateBalancedSolutionSteps(equation, missingValueParams),
-        explanation: this.generateBalancedExplanation(equation, missingValueParams)
+        explanation: this.generateBalancedExplanation(equation, missingValueParams),
+        solutionStrategy: 'Balance both sides of the equation to find the missing value'
       }
     } as QuestionDefinition;
   }
@@ -236,6 +246,10 @@ export class MissingValueController extends QuestionController {
         equation,
         missingValue: missingValueParams.missingValue
       },
+      questionContent: {
+        fullText: questionText,
+        components: undefined
+      },
       solution: {
         correctAnswer: {
           value: missingValueParams.missingValue,
@@ -244,7 +258,8 @@ export class MissingValueController extends QuestionController {
         },
         distractors,
         workingSteps: this.generateFunctionSolutionSteps(equation, missingValueParams),
-        explanation: this.generateFunctionExplanation(equation, missingValueParams)
+        explanation: this.generateFunctionExplanation(equation, missingValueParams),
+        solutionStrategy: 'Apply the function rule to find the missing input value'
       }
     } as QuestionDefinition;
   }
@@ -280,6 +295,10 @@ export class MissingValueController extends QuestionController {
         equation,
         missingValue: missingValueParams.missingValue
       },
+      questionContent: {
+        fullText: questionText,
+        components: undefined
+      },
       solution: {
         correctAnswer: {
           value: missingValueParams.missingValue,
@@ -288,7 +307,8 @@ export class MissingValueController extends QuestionController {
         },
         distractors,
         workingSteps: this.generateWordSolutionSteps(equation, missingValueParams),
-        explanation: this.generateWordExplanation(equation, missingValueParams)
+        explanation: this.generateWordExplanation(equation, missingValueParams),
+        solutionStrategy: 'Translate the word problem into an equation and solve'
       }
     } as QuestionDefinition;
   }

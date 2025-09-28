@@ -85,7 +85,7 @@ export class AdditionModel implements IMathModel<AdditionDifficultyParams, Addit
       }
 
       // Check carrying requirement
-      if (params.allow_carrying || !requiresCarrying(tempOperands)) {
+      if (params.allow_carrying || !requiresCarrying(tempOperands[0], tempOperands[1])) {
         return tempOperands;
       }
 

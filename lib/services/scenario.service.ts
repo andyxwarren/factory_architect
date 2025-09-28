@@ -45,10 +45,26 @@ export class ScenarioService {
     // 1. Filter by format compatibility
     let candidates = this.filterByFormat(criteria.format);
 
-    // 2. Filter by year appropriateness
+    // 2. Filter by model-template compatibility
+    // Prefer scenarios with templates that match the specific math model
+    if (criteria.mathModel) {
+      const modelCompatibleCandidates = candidates.filter(scenario =>
+        scenario.templates.some(template =>
+          !template.modelCompatibility ||
+          template.modelCompatibility.includes(criteria.mathModel!)
+        )
+      );
+
+      // If we found model-compatible scenarios, use those; otherwise fall back to all candidates
+      if (modelCompatibleCandidates.length > 0) {
+        candidates = modelCompatibleCandidates;
+      }
+    }
+
+    // 3. Filter by year appropriateness
     candidates = this.filterByYear(candidates, criteria.yearLevel);
 
-    // 3. Filter by model-theme compatibility
+    // 4. Filter by model-theme compatibility
     if (criteria.mathModel && !criteria.theme) {
       // If no theme is specified but we have a model, get compatible themes
       const compatibleThemes = this.modelThemeCompatibility.get(criteria.mathModel);
@@ -1000,6 +1016,83 @@ export class ScenarioService {
       realWorldConnection: 'Everyday shopping with realistic UK prices',
       yearAppropriate: [1, 2, 3, 4, 5, 6],
       templates: [
+        // ADDITION-specific template (3 operands)
+        {
+          formatCompatibility: [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.MULTI_STEP],
+          modelCompatibility: ['ADDITION'],
+          operandCount: 3,
+          template: '{character} buys a {item1} for {price1}, a {item2} for {price2}, and a {item3} for {price3}. What is the total cost?',
+          answerTemplate: 'The total cost is {result}',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'item1', type: 'item' },
+            { key: 'item2', type: 'item' },
+            { key: 'item3', type: 'item' },
+            { key: 'price1', type: 'value' },
+            { key: 'price2', type: 'value' },
+            { key: 'price3', type: 'value' },
+            { key: 'result', type: 'value' }
+          ]
+        },
+        // ADDITION-specific template (2 operands)
+        {
+          formatCompatibility: [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.MULTI_STEP],
+          modelCompatibility: ['ADDITION'],
+          operandCount: 2,
+          template: '{character} buys a {item1} for {price1} and a {item2} for {price2}. What is the total cost?',
+          answerTemplate: 'The total cost is {result}',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'item1', type: 'item' },
+            { key: 'item2', type: 'item' },
+            { key: 'price1', type: 'value' },
+            { key: 'price2', type: 'value' },
+            { key: 'result', type: 'value' }
+          ]
+        },
+        // SUBTRACTION-specific template (change calculation)
+        {
+          formatCompatibility: [QuestionFormat.DIRECT_CALCULATION],
+          modelCompatibility: ['SUBTRACTION', 'CHANGE_CALCULATION'],
+          template: '{character} buys a {item} for {price} and pays with {payment}. How much change does {character} get?',
+          answerTemplate: '{character} receives {result} in change',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'item', type: 'item' },
+            { key: 'price', type: 'value' },
+            { key: 'payment', type: 'value' },
+            { key: 'result', type: 'value' }
+          ]
+        },
+        // MULTIPLICATION-specific template
+        {
+          formatCompatibility: [QuestionFormat.DIRECT_CALCULATION],
+          modelCompatibility: ['MULTIPLICATION'],
+          template: '{character} buys {quantity} {item} at {price} each. What is the total cost?',
+          answerTemplate: 'The total cost is {result}',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'quantity', type: 'value' },
+            { key: 'item', type: 'item' },
+            { key: 'price', type: 'value' },
+            { key: 'result', type: 'value' }
+          ]
+        },
+        // DIVISION-specific template
+        {
+          formatCompatibility: [QuestionFormat.DIRECT_CALCULATION],
+          modelCompatibility: ['DIVISION'],
+          template: '{character} has {total} to spend equally on {quantity} {item}. How much can {character} spend on each one?',
+          answerTemplate: '{character} can spend {result} on each {item}',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'total', type: 'value' },
+            { key: 'quantity', type: 'value' },
+            { key: 'item', type: 'item' },
+            { key: 'result', type: 'value' }
+          ]
+        },
+        // Generic template (fallback for other operations)
         {
           formatCompatibility: [
             QuestionFormat.DIRECT_CALCULATION,

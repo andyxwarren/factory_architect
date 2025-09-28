@@ -24,6 +24,7 @@ import {
   SubDifficultyLevel,
   FormatCompatibilityRule
 } from '@/lib/types/question-formats';
+import { EnhancedDifficultySystem } from '@/lib/math-engine/difficulty-enhanced';
 
 // Import existing types for compatibility
 import type { GenerationSetup } from '@/lib/types';
@@ -128,6 +129,20 @@ export class QuestionOrchestrator {
     // 1. Parse and validate difficulty level
     const difficulty = this.parseDifficulty(request.difficulty_level || request.year_level);
 
+    // 1a. Get curriculum-aligned math parameters for this difficulty
+    // This uses the UK National Curriculum framework to define the math problem's constraints
+    let curriculumParams: any;
+    try {
+      curriculumParams = EnhancedDifficultySystem.getSubLevelParams(
+        request.model_id,
+        difficulty
+      );
+    } catch (error) {
+      // Fallback: Enhanced difficulty not yet implemented for this model
+      // Use the model's own default params or the user-provided params
+      curriculumParams = request.difficulty_params || this.getModelDefaultParams(request.model_id, difficulty.year);
+    }
+
     // 2. Determine available formats for this model and difficulty
     const availableFormats = this.formatSelector.getAvailableFormats(
       request.model_id,
@@ -190,7 +205,7 @@ export class QuestionOrchestrator {
     const questionDef = await controller.generate({
       mathModel: request.model_id,
       difficulty,
-      difficultyParams: request.difficulty_params,
+      difficultyParams: curriculumParams,  // Use curriculum-aligned params, NOT request.difficulty_params
       preferredTheme: request.scenario_theme,
       culturalContext: request.cultural_context || 'UK',
       sessionId: request.session_id
@@ -593,6 +608,60 @@ export class QuestionOrchestrator {
   }
 
   /**
+   * Format values according to context (from QuestionRenderer)
+   */
+  private formatValue(value: number, units?: string, decimalPlaces: number = 2): string {
+    if (units === '£' || units === 'pounds') {
+      return this.formatCurrency(value);
+    }
+
+    if (Number.isInteger(value)) {
+      return value.toString();
+    }
+
+    return Number(value.toFixed(decimalPlaces)).toString();
+  }
+
+  /**
+   * Format currency values (from QuestionRenderer)
+   */
+  private formatCurrency(value: number): string {
+    if (value >= 1) {
+      return `£${value.toFixed(2)}`;
+    } else {
+      return `${Math.round(value * 100)}p`;
+    }
+  }
+
+  /**
+   * Format price values (from QuestionRenderer)
+   */
+  private formatPrice(value: number): string {
+    return this.formatCurrency(value);
+  }
+
+  /**
+   * Get model's default parameters as fallback when enhanced difficulty not available
+   */
+  private getModelDefaultParams(modelId: string, year: number): any {
+    try {
+      const model = this.mathEngine.getModel(modelId);
+      if (model && typeof model.getDefaultParams === 'function') {
+        return model.getDefaultParams(year);
+      }
+    } catch (error) {
+      console.warn(`Could not get default params for model ${modelId}:`, error);
+    }
+
+    // Final fallback: return basic parameters
+    return {
+      max_value: Math.min(100, year * 20),
+      operand_count: Math.min(3, Math.floor(year / 2) + 2),
+      decimal_places: year >= 4 ? 2 : 0
+    };
+  }
+
+  /**
    * Extract math output for backward compatibility
    */
   private extractMathOutput(definition: QuestionDefinition): any {
@@ -890,18 +959,43 @@ export class QuestionRenderer {
   }
 
   private renderQuestionText(definition: QuestionDefinition): string {
+    // Defensive null checks
+    if (!definition) {
+      throw new Error('QuestionDefinition is required');
+    }
+
     // Priority 1: Use pre-generated questionContent if available
     if (definition.questionContent?.fullText) {
       return definition.questionContent.fullText;
     }
 
     // Priority 2: Use scenario templates if available
-    const template = definition.scenario.templates.find(t =>
-      t.formatCompatibility.includes(definition.format)
-    );
+    if (definition.scenario?.templates && Array.isArray(definition.scenario.templates)) {
+      const template = definition.scenario.templates.find(t => {
+        // Check format compatibility
+        if (!t?.formatCompatibility?.includes(definition.format)) {
+          return false;
+        }
 
-    if (template) {
-      return this.fillTemplate(template.template, definition);
+        // Check model compatibility
+        if (t.modelCompatibility && !t.modelCompatibility.includes(definition.mathModel)) {
+          return false;
+        }
+
+        // Check operand count compatibility if template specifies it
+        if (t.operandCount !== undefined) {
+          const questionOperandCount = definition.parameters?.narrativeValues?.operandCount;
+          if (questionOperandCount !== undefined && t.operandCount !== questionOperandCount) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      if (template?.template) {
+        return this.fillTemplate(template.template, definition);
+      }
     }
 
     // Priority 3: Fallback to basic rendering
@@ -909,6 +1003,14 @@ export class QuestionRenderer {
   }
 
   private fillTemplate(template: string, definition: QuestionDefinition): string {
+    // Defensive null checks
+    if (!template) {
+      throw new Error('Template string is required');
+    }
+    if (!definition) {
+      throw new Error('QuestionDefinition is required for template filling');
+    }
+
     let filled = template;
 
     // Build comprehensive replacement map
@@ -921,9 +1023,17 @@ export class QuestionRenderer {
 
     // Add math values if they exist
     if (definition.parameters?.mathValues) {
-      Object.entries(definition.parameters.mathValues).forEach(([key, value]) => {
+      const mathValues = definition.parameters.mathValues;
+      Object.entries(mathValues).forEach(([key, value]) => {
         replacements[key] = String(value);
       });
+
+      // Format result based on context (other values now handled in controller)
+      const isMoney = definition.scenario.theme === 'SHOPPING' ||
+                     definition.mathModel.includes('MONEY');
+      if (mathValues.result !== undefined) {
+        replacements['result'] = isMoney ? this.formatPrice(mathValues.result) : String(mathValues.result);
+      }
     }
 
     // Add character names with multiple keys for flexibility
@@ -1076,7 +1186,7 @@ export class QuestionRenderer {
 
   private generateBasicQuestion(definition: QuestionDefinition): string {
     const mathModel = definition.mathModel;
-    const values = definition.parameters.mathValues;
+    const values = definition.parameters?.mathValues || {};
 
     switch (mathModel) {
       case 'ADDITION':
@@ -1103,20 +1213,24 @@ export class QuestionRenderer {
     const options: QuestionOption[] = [];
 
     // Add correct answer
-    options.push({
-      text: definition.solution.correctAnswer.displayText,
-      value: definition.solution.correctAnswer.value,
-      index: 0
-    });
+    if (definition.solution?.correctAnswer) {
+      options.push({
+        text: definition.solution.correctAnswer.displayText || String(definition.solution.correctAnswer.value),
+        value: definition.solution.correctAnswer.value,
+        index: 0
+      });
+    }
 
     // Add distractors
-    definition.solution.distractors.forEach((distractor, index) => {
-      options.push({
-        text: distractor.displayText,
-        value: distractor.value,
-        index: index + 1
+    if (definition.solution?.distractors && Array.isArray(definition.solution.distractors)) {
+      definition.solution.distractors.forEach((distractor, index) => {
+        options.push({
+          text: distractor.displayText || String(distractor.value),
+          value: distractor.value,
+          index: index + 1
+        });
       });
-    });
+    }
 
     // Shuffle options
     return this.shuffleOptions(options);
