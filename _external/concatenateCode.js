@@ -57,7 +57,7 @@ const EXCLUDED_FILES = [
     'FACTORY_MODEL_IMPLEMENTATION_GUIDE.md',
     'Factory_Architect_User_Guide.md',
     'README.md',
-    'STUDENT_INTERFACE_PROJECT_PROPOSAL.md', '.md', '.csv'
+    'STUDENT_INTERFACE_PROJECT_PROPOSAL.md'
 ];
 const EXCLUDED_EXTENSIONS = [ /* ... your existing list ... */
     // Binary and media files
@@ -77,7 +77,7 @@ const EXCLUDED_EXTENSIONS = [ /* ... your existing list ... */
     // Fonts and non-code assets
     '.woff', '.woff2', '.ttf', '.otf', '.eot',
     // Data files that might be large
-    '.csv', '.tsv', '.db', '.sqlite', '.parquet',
+    '.csv', '.tsv', '.db', '.sqlite', '.parquet', '.md',
     // IDE specific compilation files
     '.suo', '.user', '.userosscache', '.sln.docstates',
 ];
@@ -164,10 +164,14 @@ async function traverseDirectory(currentScanDir, configuredProjectBase, collecte
                 const fileNameLower = entry.name.toLowerCase();
                 const fileExtLower = path.extname(fileNameLower);
 
-                if (EXCLUDED_FILES.some(excludedFile => fileNameLower === excludedFile || relativePathForLLM.toLowerCase() === excludedFile)) {
-                    continue;
-                }
-                if (EXCLUDED_EXTENSIONS.includes(fileExtLower)) {
+                // Exclusion checks
+                const isFileExcluded = EXCLUDED_FILES.some(excludedFile => 
+                    fileNameLower === excludedFile.toLowerCase() || 
+                    relativePathForLLM.toLowerCase() === excludedFile.toLowerCase()
+                );
+                const isExtensionExcluded = EXCLUDED_EXTENSIONS.includes(fileExtLower);
+
+                if (isFileExcluded || isExtensionExcluded) {
                     continue;
                 }
                 // No longer using INCLUDED_EXTENSIONS - including all files by default

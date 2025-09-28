@@ -303,7 +303,7 @@ export class MigrationUtils {
    */
   static async testCompatibility(
     request: GenerateRequest,
-    legacyFunction: Function,
+    legacyFunction: (request: GenerateRequest) => Promise<GeneratedQuestion>,
     enhancedAdapter: LegacyAdapter
   ): Promise<{
     legacy: GeneratedQuestion;
