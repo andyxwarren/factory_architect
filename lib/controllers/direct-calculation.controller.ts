@@ -126,24 +126,52 @@ export class DirectCalculationController extends QuestionController {
         const isMoney = scenario.theme === 'SHOPPING' || mathOutput.operation.includes('MONEY');
         if (mathOutput.operands && Array.isArray(mathOutput.operands)) {
           // Array format
+          const realisticPrices: number[] = [];
           mathOutput.operands.forEach((operand: number, index: number) => {
             if (isMoney) {
-              narrativeValues[`price${index + 1}`] = MoneyContextGenerator.formatMoney(operand);
+              // Generate realistic prices based on scenario items instead of using raw math values
+              const realisticPrice = this.generateRealisticPrice(scenario, index);
+              realisticPrices.push(realisticPrice);
+              narrativeValues[`price${index + 1}`] = MoneyContextGenerator.formatMoney(realisticPrice);
+              // Update mathValues to match realistic prices for consistency
+              mathValues[`operand_${index + 1}`] = realisticPrice;
             } else {
               narrativeValues[`price${index + 1}`] = String(operand);
             }
           });
+
+          // Recalculate result using realistic prices for money scenarios
+          if (isMoney && realisticPrices.length > 0) {
+            const realisticResult = realisticPrices.reduce((sum, price) => sum + price, 0);
+            mathValues.result = Math.round(realisticResult * 100) / 100; // Round to 2 decimal places
+            // Update mathOutput.result as well for consistency
+            mathOutput.result = mathValues.result;
+          }
         } else {
           // Individual properties format
+          const realisticPrices: number[] = [];
           for (let i = 1; i <= 10; i++) {
             const operandKey = `operand_${i}`;
             if (mathOutput[operandKey] !== undefined) {
               if (isMoney) {
-                narrativeValues[`price${i}`] = MoneyContextGenerator.formatMoney(mathOutput[operandKey]);
+                // Generate realistic prices based on scenario items instead of using raw math values
+                const realisticPrice = this.generateRealisticPrice(scenario, i - 1);
+                realisticPrices.push(realisticPrice);
+                narrativeValues[`price${i}`] = MoneyContextGenerator.formatMoney(realisticPrice);
+                // Update mathValues to match realistic prices for consistency
+                mathValues[operandKey] = realisticPrice;
               } else {
                 narrativeValues[`price${i}`] = String(mathOutput[operandKey]);
               }
             }
+          }
+
+          // Recalculate result using realistic prices for money scenarios
+          if (isMoney && realisticPrices.length > 0) {
+            const realisticResult = realisticPrices.reduce((sum, price) => sum + price, 0);
+            mathValues.result = Math.round(realisticResult * 100) / 100; // Round to 2 decimal places
+            // Update mathOutput.result as well for consistency
+            mathOutput.result = mathValues.result;
           }
         }
 
@@ -163,50 +191,122 @@ export class DirectCalculationController extends QuestionController {
         break;
 
       case 'SUBTRACTION':
-        mathValues.minuend = mathOutput.minuend;
-        mathValues.subtrahend = mathOutput.subtrahend;
-        mathValues.result = mathOutput.result;
-
         // Add formatted placeholders for templates (payment and change scenarios)
         const isMoneySubtraction = scenario.theme === 'SHOPPING' || mathOutput.operation.includes('MONEY');
+        let realisticPrice: number = mathOutput.subtrahend;
+        let realisticPayment: number = mathOutput.minuend;
+
         if (mathOutput.subtrahend !== undefined) {
-          narrativeValues['price'] = isMoneySubtraction ? MoneyContextGenerator.formatMoney(mathOutput.subtrahend) : String(mathOutput.subtrahend);
+          if (isMoneySubtraction) {
+            // Generate realistic item price instead of using raw math value
+            realisticPrice = this.generateRealisticPrice(scenario, 0);
+            narrativeValues['price'] = MoneyContextGenerator.formatMoney(realisticPrice);
+            // Update mathValues to match realistic price for consistency
+            mathValues.subtrahend = realisticPrice;
+          } else {
+            narrativeValues['price'] = String(mathOutput.subtrahend);
+            mathValues.subtrahend = mathOutput.subtrahend;
+          }
         }
         if (mathOutput.minuend !== undefined) {
-          narrativeValues['payment'] = isMoneySubtraction ? MoneyContextGenerator.formatMoney(mathOutput.minuend) : String(mathOutput.minuend);
+          if (isMoneySubtraction) {
+            // For payment, round to sensible amounts (£5, £10, £20, etc.)
+            const price = parseFloat(narrativeValues['price']?.replace(/[£,]/g, '') || '5');
+            realisticPayment = Math.ceil(price / 5) * 5; // Round up to nearest £5
+            narrativeValues['payment'] = MoneyContextGenerator.formatMoney(realisticPayment);
+            // Update mathValues to match realistic payment for consistency
+            mathValues.minuend = realisticPayment;
+          } else {
+            narrativeValues['payment'] = String(mathOutput.minuend);
+            mathValues.minuend = mathOutput.minuend;
+          }
+        }
+
+        // Recalculate result using realistic prices for money scenarios
+        if (isMoneySubtraction) {
+          const realisticResult = realisticPayment - realisticPrice;
+          mathValues.result = Math.round(realisticResult * 100) / 100; // Round to 2 decimal places
+          // Update mathOutput.result as well for consistency
+          mathOutput.result = mathValues.result;
+        } else {
+          mathValues.result = mathOutput.result;
         }
         break;
 
       case 'MULTIPLICATION':
-        mathValues.multiplicand = mathOutput.multiplicand;
-        mathValues.multiplier = mathOutput.multiplier;
-        mathValues.result = mathOutput.result;
-
         // Add formatted placeholders for templates (quantity and unit price scenarios)
         const isMoneyMultiplication = scenario.theme === 'SHOPPING' || mathOutput.operation.includes('MONEY');
+        let realisticUnitPrice: number = mathOutput.multiplicand;
+        let multiplicationQuantity: number = mathOutput.multiplier;
+
         if (mathOutput.multiplier !== undefined) {
           narrativeValues['quantity'] = String(mathOutput.multiplier);
+          mathValues.multiplier = mathOutput.multiplier;
+          multiplicationQuantity = mathOutput.multiplier;
         }
         if (mathOutput.multiplicand !== undefined) {
-          narrativeValues['price'] = isMoneyMultiplication ? MoneyContextGenerator.formatMoney(mathOutput.multiplicand) : String(mathOutput.multiplicand);
+          if (isMoneyMultiplication) {
+            // Generate realistic unit price instead of using raw math value
+            realisticUnitPrice = this.generateRealisticPrice(scenario, 0);
+            narrativeValues['price'] = MoneyContextGenerator.formatMoney(realisticUnitPrice);
+            // Update mathValues to match realistic unit price for consistency
+            mathValues.multiplicand = realisticUnitPrice;
+          } else {
+            narrativeValues['price'] = String(mathOutput.multiplicand);
+            mathValues.multiplicand = mathOutput.multiplicand;
+          }
+        }
+
+        // Recalculate result using realistic prices for money scenarios
+        if (isMoneyMultiplication) {
+          const realisticResult = realisticUnitPrice * multiplicationQuantity;
+          mathValues.result = Math.round(realisticResult * 100) / 100; // Round to 2 decimal places
+          // Update mathOutput.result as well for consistency
+          mathOutput.result = mathValues.result;
+        } else {
+          mathValues.result = mathOutput.result;
         }
         break;
 
       case 'DIVISION':
-        mathValues.dividend = mathOutput.dividend;
-        mathValues.divisor = mathOutput.divisor;
-        mathValues.quotient = mathOutput.quotient;
-        if (mathOutput.remainder) {
-          mathValues.remainder = mathOutput.remainder;
-        }
-
         // Add formatted placeholders for templates (total and quantity scenarios)
         const isMoneyDivision = scenario.theme === 'SHOPPING' || mathOutput.operation.includes('MONEY');
-        if (mathOutput.dividend !== undefined) {
-          narrativeValues['total'] = isMoneyDivision ? MoneyContextGenerator.formatMoney(mathOutput.dividend) : String(mathOutput.dividend);
-        }
+        let realisticTotal: number = mathOutput.dividend;
+        let divisionQuantity: number = mathOutput.divisor;
+
         if (mathOutput.divisor !== undefined) {
           narrativeValues['quantity'] = String(mathOutput.divisor);
+          mathValues.divisor = mathOutput.divisor;
+          divisionQuantity = mathOutput.divisor;
+        }
+
+        if (mathOutput.dividend !== undefined) {
+          if (isMoneyDivision) {
+            // For division, generate a reasonable total amount to divide
+            // Should be larger than individual item prices but still realistic
+            const basePrice = this.generateRealisticPrice(scenario, 0);
+            realisticTotal = Math.round(basePrice * divisionQuantity * 100) / 100;
+            narrativeValues['total'] = MoneyContextGenerator.formatMoney(realisticTotal);
+            // Update mathValues to match realistic total for consistency
+            mathValues.dividend = realisticTotal;
+          } else {
+            narrativeValues['total'] = String(mathOutput.dividend);
+            mathValues.dividend = mathOutput.dividend;
+          }
+        }
+
+        // Recalculate result using realistic prices for money scenarios
+        if (isMoneyDivision && divisionQuantity > 0) {
+          const realisticQuotient = realisticTotal / divisionQuantity;
+          mathValues.quotient = Math.round(realisticQuotient * 100) / 100; // Round to 2 decimal places
+          // Update mathOutput.quotient as well for consistency
+          mathOutput.quotient = mathValues.quotient;
+          mathValues.remainder = 0; // For money, usually no remainder
+        } else {
+          mathValues.quotient = mathOutput.quotient;
+          if (mathOutput.remainder) {
+            mathValues.remainder = mathOutput.remainder;
+          }
         }
         break;
 
@@ -739,5 +839,52 @@ export class DirectCalculationController extends QuestionController {
       return decimalIndex === -1 ? 0 : result.length - decimalIndex - 1;
     }
     return 0;
+  }
+
+  /**
+   * Generate a realistic price for shopping scenarios using scenario item typicalValue ranges
+   */
+  private generateRealisticPrice(scenario: any, itemIndex: number): number {
+    // Check if scenario has items with typicalValue ranges
+    if (scenario?.items && Array.isArray(scenario.items) && scenario.items.length > itemIndex) {
+      const item = scenario.items[itemIndex];
+      if (item?.typicalValue) {
+        let { min, max, typical } = item.typicalValue;
+        if (typeof min === 'number' && typeof max === 'number') {
+          // Apply reasonable caps based on scenario theme to prevent unrealistic prices
+          if (scenario.theme === 'SCHOOL') {
+            // School supplies should be capped at reasonable prices
+            max = Math.min(max, 5.00); // Cap school supplies at £5 max
+            min = Math.max(min, 0.50); // Minimum 50p for school supplies
+          } else if (scenario.theme === 'SHOPPING') {
+            // General shopping items - cap very high values
+            if (item.category === 'FOOD_DRINK') {
+              max = Math.min(max, 8.00); // Cap food/drink at £8
+            } else if (item.category === 'SCHOOL_SUPPLIES') {
+              max = Math.min(max, 4.00); // Cap school supplies at £4
+            } else if (item.category === 'TOYS_GAMES') {
+              max = Math.min(max, 12.00); // Cap toys/games at £12
+            }
+          }
+
+          // Use generateRandomNumber but round to 2 decimal places for realistic prices
+          const range = max - min;
+          const randomValue = min + (Math.random() * range);
+          return Math.round(randomValue * 100) / 100; // Round to 2 decimal places
+        }
+      }
+    }
+
+    // Fallback: if no scenario items or typicalValue, use reasonable default ranges
+    const fallbackRanges = [
+      { min: 0.20, max: 0.80 }, // First item: small food items
+      { min: 0.15, max: 0.60 }, // Second item: small food items
+      { min: 1.50, max: 6.00 }, // Third item: larger food items
+      { min: 0.50, max: 3.00 }, // Fourth+ items: misc items
+    ];
+
+    const range = fallbackRanges[Math.min(itemIndex, fallbackRanges.length - 1)];
+    const randomValue = range.min + (Math.random() * (range.max - range.min));
+    return Math.round(randomValue * 100) / 100; // Round to 2 decimal places
   }
 }

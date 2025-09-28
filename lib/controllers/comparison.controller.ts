@@ -90,7 +90,10 @@ export class ComparisonController extends QuestionController {
       solutionStrategy: 'comparison_analysis'
     };
 
-    // 7. Assemble complete question definition
+    // 7. Generate comparison-specific question text
+    const questionText = this.generateComparisonQuestionText(comparisonData, scenario);
+
+    // 8. Assemble complete question definition
     const baseDefinition = this.createBaseQuestionDefinition(
       QuestionFormat.COMPARISON,
       params.mathModel,
@@ -101,6 +104,17 @@ export class ComparisonController extends QuestionController {
     return {
       ...baseDefinition,
       parameters: questionParams,
+      questionContent: {
+        fullText: questionText,
+        components: undefined,
+        templateData: {
+          character: scenario.characters?.[0]?.name || 'Student',
+          optionA: comparisonData.options[0].displayText,
+          optionB: comparisonData.options[1].displayText,
+          context: comparisonData.context,
+          comparisonType: comparisonData.comparisonMetric
+        }
+      },
       solution: completeSolution
     } as QuestionDefinition;
   }
@@ -413,6 +427,40 @@ export class ComparisonController extends QuestionController {
 
     const [min, max] = ranges[year as keyof typeof ranges] || [5, 15];
     return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  /**
+   * Generate comparison-specific question text
+   */
+  private generateComparisonQuestionText(data: ComparisonData, scenario: any): string {
+    const character = scenario.characters?.[0]?.name || 'Sarah';
+    const optionA = data.options[0];
+    const optionB = data.options[1];
+
+    // Create contextual introduction based on scenario theme
+    let contextIntro = `${character} is comparing options to find the best value.`;
+
+    if (scenario.theme === 'shopping' || scenario.theme === 'money') {
+      contextIntro = `${character} is shopping and wants to get the best value for money.`;
+    } else if (scenario.theme === 'school') {
+      contextIntro = `${character} needs to choose the most cost-effective option for school.`;
+    } else if (scenario.theme === 'sports') {
+      contextIntro = `${character} is comparing sports equipment prices.`;
+    }
+
+    // Present the two options clearly
+    const optionPresentation = `\n\nOption A: ${optionA.displayText}\nOption B: ${optionB.displayText}`;
+
+    // Ask the comparison question
+    let questionPrompt = '\n\nWhich option offers better value?';
+
+    if (data.type === 'unit_rate') {
+      questionPrompt = '\n\nWhich option offers better value for money?';
+    } else if (data.comparisonMetric === 'calculated_value') {
+      questionPrompt = '\n\nWhich calculation gives the higher result?';
+    }
+
+    return contextIntro + optionPresentation + questionPrompt;
   }
 
   /**

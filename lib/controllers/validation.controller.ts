@@ -373,13 +373,19 @@ export class ValidationController extends QuestionController {
       case 'procedural':
         // Wrong operation errors
         if (mathOutput.operation === 'ADDITION') {
-          return mathOutput.operand_1 - mathOutput.operand_2; // Subtracted instead
+          const firstOperand = mathOutput.operands?.[0] || mathOutput.operand_1 || 0;
+          const secondOperand = mathOutput.operands?.[1] || mathOutput.operand_2 || 0;
+          return firstOperand - secondOperand; // Subtracted instead
         }
         if (mathOutput.operation === 'SUBTRACTION') {
-          return mathOutput.operand_1 + mathOutput.operand_2; // Added instead
+          const minuend = mathOutput.minuend || mathOutput.operand_1 || 0;
+          const subtrahend = mathOutput.subtrahend || mathOutput.operand_2 || 0;
+          return minuend + subtrahend; // Added instead
         }
         if (mathOutput.operation === 'MULTIPLICATION') {
-          return mathOutput.operand_1 + mathOutput.operand_2; // Added instead
+          const multiplicand = mathOutput.multiplicand || mathOutput.operand_1 || 0;
+          const multiplier = mathOutput.multiplier || mathOutput.operand_2 || 0;
+          return multiplicand + multiplier; // Added instead
         }
         break;
 
@@ -402,7 +408,8 @@ export class ValidationController extends QuestionController {
 
     switch (mathOutput.operation) {
       case 'ADDITION':
-        steps.push(`${mathOutput.operand_1} + ${mathOutput.operand_2}${mathOutput.operand_3 ? ' + ' + mathOutput.operand_3 : ''}`);
+        const additionDescription = this.describeOperation(mathOutput);
+        steps.push(additionDescription);
         if (errorType && errorType !== 'none') {
           const wrongAddResult = this.generatePlausibleIncorrectAnswer(mathOutput, errorType);
           steps.push(`= ${wrongAddResult}`);
@@ -412,7 +419,8 @@ export class ValidationController extends QuestionController {
         break;
 
       case 'SUBTRACTION':
-        steps.push(`${mathOutput.operand_1} - ${mathOutput.operand_2}`);
+        const subtractionDescription = this.describeOperation(mathOutput);
+        steps.push(subtractionDescription);
         if (errorType && errorType !== 'none') {
           const wrongSubResult = this.generatePlausibleIncorrectAnswer(mathOutput, errorType);
           steps.push(`= ${wrongSubResult}`);
@@ -422,7 +430,8 @@ export class ValidationController extends QuestionController {
         break;
 
       case 'MULTIPLICATION':
-        steps.push(`${mathOutput.operand_1} × ${mathOutput.operand_2}`);
+        const multiplicationDescription = this.describeOperation(mathOutput);
+        steps.push(multiplicationDescription);
         if (errorType && errorType !== 'none') {
           const wrongMulResult = this.generatePlausibleIncorrectAnswer(mathOutput, errorType);
           steps.push(`= ${wrongMulResult}`);
@@ -432,7 +441,8 @@ export class ValidationController extends QuestionController {
         break;
 
       case 'DIVISION':
-        steps.push(`${mathOutput.operand_1} ÷ ${mathOutput.operand_2}`);
+        const divisionDescription = this.describeOperation(mathOutput);
+        steps.push(divisionDescription);
         if (errorType && errorType !== 'none') {
           const wrongDivResult = this.generatePlausibleIncorrectAnswer(mathOutput, errorType);
           steps.push(`= ${wrongDivResult}`);
@@ -457,7 +467,8 @@ export class ValidationController extends QuestionController {
 
     switch (mathOutput.operation) {
       case 'ADDITION':
-        steps.push(`Step 1: ${mathOutput.operand_1} + ${mathOutput.operand_2}${mathOutput.operand_3 ? ' + ' + mathOutput.operand_3 : ''}`);
+        const additionStep = this.describeOperation(mathOutput);
+        steps.push(`Step 1: ${additionStep}`);
 
         // Introduce error in calculation step
         errorStep = 1;
@@ -466,11 +477,14 @@ export class ValidationController extends QuestionController {
         break;
 
       case 'MULTIPLICATION':
-        steps.push(`Step 1: ${mathOutput.operand_1} × ${mathOutput.operand_2}`);
+        const multiplicationStep = this.describeOperation(mathOutput);
+        steps.push(`Step 1: ${multiplicationStep}`);
 
         // Could add intermediate step with error
-        if (mathOutput.operand_1 > 10 && mathOutput.operand_2 > 10) {
-          steps.push(`Step 2: Break down: ${mathOutput.operand_1} × ${mathOutput.operand_2}`);
+        const multiplicand = mathOutput.multiplicand || mathOutput.operand_1 || 0;
+        const multiplier = mathOutput.multiplier || mathOutput.operand_2 || 0;
+        if (multiplicand > 10 && multiplier > 10) {
+          steps.push(`Step 2: Break down: ${multiplicand} × ${multiplier}`);
           errorStep = 2;
           const wrongBreakdownResult = this.generatePlausibleIncorrectAnswer(mathOutput, errorType);
           steps.push(`Step 3: = ${wrongBreakdownResult}`);
@@ -531,13 +545,34 @@ export class ValidationController extends QuestionController {
   private describeOperation(mathOutput: any): string {
     switch (mathOutput.operation) {
       case 'ADDITION':
-        return `${mathOutput.operand_1} + ${mathOutput.operand_2}${mathOutput.operand_3 ? ' + ' + mathOutput.operand_3 : ''}`;
+        if (mathOutput.operands && Array.isArray(mathOutput.operands)) {
+          return mathOutput.operands.join(' + ');
+        }
+        // Fallback to individual properties if available
+        const addTerms = [];
+        if (mathOutput.operand_1 !== undefined) addTerms.push(mathOutput.operand_1);
+        if (mathOutput.operand_2 !== undefined) addTerms.push(mathOutput.operand_2);
+        if (mathOutput.operand_3 !== undefined) addTerms.push(mathOutput.operand_3);
+        return addTerms.length > 0 ? addTerms.join(' + ') : 'a calculation';
+
       case 'SUBTRACTION':
-        return `${mathOutput.operand_1} - ${mathOutput.operand_2}`;
+        if (mathOutput.minuend !== undefined && mathOutput.subtrahend !== undefined) {
+          return `${mathOutput.minuend} - ${mathOutput.subtrahend}`;
+        }
+        return `${mathOutput.operand_1 || '?'} - ${mathOutput.operand_2 || '?'}`;
+
       case 'MULTIPLICATION':
-        return `${mathOutput.operand_1} × ${mathOutput.operand_2}`;
+        if (mathOutput.multiplicand !== undefined && mathOutput.multiplier !== undefined) {
+          return `${mathOutput.multiplicand} × ${mathOutput.multiplier}`;
+        }
+        return `${mathOutput.operand_1 || '?'} × ${mathOutput.operand_2 || '?'}`;
+
       case 'DIVISION':
-        return `${mathOutput.operand_1} ÷ ${mathOutput.operand_2}`;
+        if (mathOutput.dividend !== undefined && mathOutput.divisor !== undefined) {
+          return `${mathOutput.dividend} ÷ ${mathOutput.divisor}`;
+        }
+        return `${mathOutput.operand_1 || '?'} ÷ ${mathOutput.operand_2 || '?'}`;
+
       default:
         return `a calculation`;
     }
