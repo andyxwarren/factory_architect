@@ -46,6 +46,11 @@ export class MultiStepController extends QuestionController {
       // 1. Generate base math content for final result
       const finalMathOutput = await this.generateMathOutput(params.mathModel, params.difficultyParams);
 
+      // Validate mathOutput
+      if (!finalMathOutput) {
+        throw new Error(`Failed to generate math output for model: ${params.mathModel}`);
+      }
+
       // 2. Select appropriate scenario that supports multi-step problems
       const scenario = await this.selectScenario({
         theme: params.preferredTheme || ScenarioTheme.REAL_WORLD,
@@ -214,6 +219,9 @@ export class MultiStepController extends QuestionController {
 
     // Work backwards from final result to create logical sequence
     const targetFinalResult = finalOutput.result || finalOutput.answer || finalOutput.value;
+    if (targetFinalResult === undefined || targetFinalResult === null) {
+      throw new Error(`No valid result found in finalOutput: ${JSON.stringify(finalOutput)}`);
+    }
 
     // Generate a coherent sequence that leads to a reasonable final result
     // Start with a manageable initial value
@@ -477,8 +485,8 @@ export class MultiStepController extends QuestionController {
    * Generate multi-step question text with scenario
    */
   private generateMultiStepQuestionText(scenario: any, stepCalculations: any[], multiStepParams: MultiStepParams): string {
-    const character = scenario.characters[0].name;
-    const setting = scenario.setting.location;
+    const character = scenario.characters?.[0]?.name || 'A student';
+    const setting = scenario.setting?.location || 'problem';
 
     // Create a story that incorporates all steps
     let storyParts = [];

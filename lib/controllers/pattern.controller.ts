@@ -44,6 +44,11 @@ export class PatternController extends QuestionController {
     // 1. Generate base math content for number ranges
     const mathOutput = await this.generateMathOutput(params.mathModel, params.difficultyParams);
 
+    // Validate mathOutput
+    if (!mathOutput) {
+      throw new Error(`Failed to generate math output for model: ${params.mathModel}`);
+    }
+
     // 2. Select appropriate scenario
     const scenario = await this.selectScenario({
       theme: params.preferredTheme || ScenarioTheme.PUZZLE,
@@ -365,7 +370,7 @@ export class PatternController extends QuestionController {
    * Generate question text with scenario
    */
   private generatePatternQuestionText(scenario: any, questionSequence: (number | string)[], patternParams: PatternParams): string {
-    const character = scenario.characters[0].name;
+    const character = scenario.characters?.[0]?.name || 'A student';
     const sequenceText = questionSequence.join(', ');
 
     switch (scenario.theme) {

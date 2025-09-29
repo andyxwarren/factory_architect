@@ -39,6 +39,11 @@ export class EstimationController extends QuestionController {
     // 1. Generate base math content
     const mathOutput = await this.generateMathOutput(params.mathModel, params.difficultyParams);
 
+    // Validate mathOutput
+    if (!mathOutput) {
+      throw new Error(`Failed to generate math output for model: ${params.mathModel}`);
+    }
+
     // 2. Select appropriate scenario
     const scenario = await this.selectScenario({
       theme: params.preferredTheme || ScenarioTheme.SHOPPING,
@@ -92,6 +97,9 @@ export class EstimationController extends QuestionController {
 
     // Extract the exact result for rounding
     const exactValue = mathOutput.result || mathOutput.answer || mathOutput.value;
+    if (exactValue === undefined || exactValue === null) {
+      throw new Error(`No valid result found in mathOutput for rounding: ${JSON.stringify(mathOutput)}`);
+    }
     const roundingPlace = estimationParams.roundingPlace || 'tens';
 
     // Calculate rounded value
@@ -172,6 +180,9 @@ export class EstimationController extends QuestionController {
     );
 
     const exactValue = mathOutput.result || mathOutput.answer || mathOutput.value;
+    if (exactValue === undefined || exactValue === null) {
+      throw new Error(`No valid result found in mathOutput for approximation: ${JSON.stringify(mathOutput)}`);
+    }
 
     // Generate reasonable estimate based on operation
     const estimatedValue = this.generateReasonableEstimate(mathOutput, estimationParams.toleranceRange || 0.15);
@@ -249,6 +260,9 @@ export class EstimationController extends QuestionController {
     );
 
     const exactValue = mathOutput.result || mathOutput.answer || mathOutput.value;
+    if (exactValue === undefined || exactValue === null) {
+      throw new Error(`No valid result found in mathOutput for magnitude: ${JSON.stringify(mathOutput)}`);
+    }
     const magnitude = this.calculateOrderOfMagnitude(exactValue);
 
     const questionText = this.generateMagnitudeQuestionText(scenario, mathOutput);
@@ -294,6 +308,9 @@ export class EstimationController extends QuestionController {
     );
 
     const exactValue = mathOutput.result || mathOutput.answer || mathOutput.value;
+    if (exactValue === undefined || exactValue === null) {
+      throw new Error(`No valid result found in mathOutput for benchmark: ${JSON.stringify(mathOutput)}`);
+    }
     const benchmark = this.findNearestBenchmark(exactValue);
 
     const questionText = this.generateBenchmarkQuestionText(scenario, mathOutput, benchmark);
@@ -477,8 +494,8 @@ export class EstimationController extends QuestionController {
       return 'is calculating a result';
     }
 
-    // Format monetary values
-    const formatValue = (value: number) => `£${value.toFixed(2)}`;
+    // Format monetary values using the class method with improved floating point handling
+    const formatValue = (value: number) => this.formatValue(value, '£');
 
     switch (mathOutput.operation) {
       case 'ADDITION':

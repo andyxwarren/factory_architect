@@ -295,6 +295,23 @@ export abstract class QuestionController {
    * Format values according to context
    */
   protected formatValue(value: number, units?: string, decimalPlaces: number = 2): string {
+    if (value === undefined || value === null) {
+      console.warn('formatValue called with undefined/null value');
+      return '0'; // Return a safe default instead of crashing
+    }
+
+    if (typeof value !== 'number') {
+      console.warn(`formatValue expects a number, got ${typeof value}:`, value);
+      const numericValue = Number(value);
+      if (isNaN(numericValue)) {
+        return '0';
+      }
+      value = numericValue;
+    }
+
+    // Fix floating point precision issues by rounding to 10 decimal places first
+    value = Math.round(value * Math.pow(10, 10)) / Math.pow(10, 10);
+
     if (units === '£' || units === 'pounds') {
       return this.formatCurrency(value);
     }
@@ -303,13 +320,28 @@ export abstract class QuestionController {
       return value.toString();
     }
 
-    return value.toFixed(decimalPlaces);
+    // Format with specified decimal places and remove unnecessary trailing zeros
+    let formatted = value.toFixed(decimalPlaces);
+
+    // Remove trailing zeros after decimal point, but keep at least one decimal place for non-integers
+    if (formatted.includes('.')) {
+      formatted = formatted.replace(/\.?0+$/, '');
+      // If we removed all decimal places, add back one if original had decimals
+      if (!formatted.includes('.') && decimalPlaces > 0 && value % 1 !== 0) {
+        formatted += '.0';
+      }
+    }
+
+    return formatted;
   }
 
   /**
    * Format currency values
    */
   protected formatCurrency(value: number): string {
+    // Fix floating point precision issues
+    value = Math.round(value * Math.pow(10, 10)) / Math.pow(10, 10);
+
     if (value >= 1) {
       return `£${value.toFixed(2)}`;
     } else {

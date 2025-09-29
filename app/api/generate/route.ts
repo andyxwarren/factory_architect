@@ -84,10 +84,22 @@ export async function POST(req: NextRequest) {
     }
 
     // Transform legacy request to enhanced format
+    // Special handling for models that shouldn't use DIRECT_CALCULATION format
+    const getFormatPreference = (modelId: string) => {
+      switch (modelId) {
+        case 'FRACTION':
+          return 'DIRECT_CALCULATION'; // Keep using DIRECT_CALCULATION but we'll handle this specially
+        case 'COMPARISON':
+          return 'COMPARISON';
+        default:
+          return 'DIRECT_CALCULATION';
+      }
+    };
+
     const enhancedRequest: EnhancedQuestionRequest = {
       model_id,
       difficulty_level: sub_level || `${year_level}.3`, // Convert to X.Y format
-      format_preference: 'DIRECT_CALCULATION' as any, // Force direct calculation for legacy compatibility
+      format_preference: getFormatPreference(model_id) as any,
       difficulty_params,
       session_id,
       cultural_context: 'UK',

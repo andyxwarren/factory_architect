@@ -131,7 +131,7 @@ export class OrderingController extends QuestionController {
       },
       solution: {
         correctAnswer: {
-          value: correctOrder,
+          value: 0, // Use 0 as default correct option index
           displayText: correctOrder.map(index => valuesToOrder[index]).join(', '),
           units: ''
         },
@@ -379,9 +379,10 @@ export class OrderingController extends QuestionController {
     const reverseSorted = reverseOrder.map(index => values[index]);
     if (JSON.stringify(reverseSorted) !== JSON.stringify(correctSorted)) {
       distractors.push({
-        value: reverseSorted,
+        value: 1, // Option index
+        displayText: reverseSorted.join(', '),
         strategy: DistractorStrategy.LOGICAL_OPPOSITE,
-        rationale: 'Ordered in opposite direction'
+        reasoning: 'Ordered in opposite direction'
       });
     }
 
@@ -394,18 +395,20 @@ export class OrderingController extends QuestionController {
 
       const partialSorted = partialOrder.map(index => values[index]);
       distractors.push({
-        value: partialSorted,
+        value: 2, // Option index
+        displayText: partialSorted.join(', '),
         strategy: DistractorStrategy.PARTIAL_UNDERSTANDING,
-        rationale: 'Partially correct ordering'
+        reasoning: 'Partially correct ordering'
       });
     }
 
     // 3. Random/original order
     if (JSON.stringify(values) !== JSON.stringify(correctSorted)) {
       distractors.push({
-        value: values,
+        value: 3, // Option index
+        displayText: values.join(', '),
         strategy: DistractorStrategy.NO_ATTEMPT,
-        rationale: 'Original unsorted order'
+        reasoning: 'Original unsorted order'
       });
     }
 
@@ -419,9 +422,10 @@ export class OrderingController extends QuestionController {
       const nearlySorted = nearlyCorrect.map(index => values[index]);
       if (JSON.stringify(nearlySorted) !== JSON.stringify(correctSorted)) {
         distractors.push({
-          value: nearlySorted,
+          value: 4, // Option index
+          displayText: nearlySorted.join(', '),
           strategy: DistractorStrategy.CLOSE_BUT_WRONG,
-          rationale: 'One element out of place'
+          reasoning: 'One element out of place'
         });
       }
     }

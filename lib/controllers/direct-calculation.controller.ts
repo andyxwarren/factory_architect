@@ -74,11 +74,72 @@ export class DirectCalculationController extends QuestionController {
       scenario
     );
 
+    // Generate custom question content for specific operations
+    const questionContent = this.generateCustomQuestionContent(params.mathModel, mathOutput, questionParams);
+
     return {
       ...baseDefinition,
       parameters: questionParams,
-      solution
+      solution,
+      ...(questionContent && { questionContent })
     } as QuestionDefinition;
+  }
+
+  /**
+   * Generate custom question content for specific operations that need special handling
+   */
+  private generateCustomQuestionContent(mathModel: string, mathOutput: any, params: QuestionParameters): any {
+    switch (mathModel) {
+      case 'FRACTION':
+        return this.generateFractionQuestionContent(mathOutput, params);
+      default:
+        return null; // Use default template generation
+    }
+  }
+
+  /**
+   * Generate appropriate question content for FRACTION models
+   */
+  private generateFractionQuestionContent(mathOutput: any, params: QuestionParameters): any {
+    const numerator = params.mathValues.numerator;
+    const denominator = params.mathValues.denominator;
+    const wholeValue = params.mathValues.whole_value;
+
+    // Convert common fractions to words
+    const fractionText = this.formatFractionAsWords(numerator, denominator);
+
+    const questionText = `What is ${fractionText} of ${wholeValue}?`;
+
+    return {
+      fullText: questionText,
+      components: undefined,
+      templateData: {
+        numerator,
+        denominator,
+        whole_value: wholeValue,
+        fraction_text: fractionText,
+        result: mathOutput.result
+      }
+    };
+  }
+
+  /**
+   * Convert fraction to words (e.g., 1/2 -> "one half", 3/4 -> "three quarters")
+   */
+  private formatFractionAsWords(numerator: number, denominator: number): string {
+    // Common fraction mappings
+    if (numerator === 1 && denominator === 2) return "one half";
+    if (numerator === 1 && denominator === 3) return "one third";
+    if (numerator === 2 && denominator === 3) return "two thirds";
+    if (numerator === 1 && denominator === 4) return "one quarter";
+    if (numerator === 3 && denominator === 4) return "three quarters";
+    if (numerator === 1 && denominator === 5) return "one fifth";
+    if (numerator === 2 && denominator === 5) return "two fifths";
+    if (numerator === 3 && denominator === 5) return "three fifths";
+    if (numerator === 4 && denominator === 5) return "four fifths";
+
+    // Fallback to numerical format
+    return `${numerator}/${denominator}`;
   }
 
   /**
@@ -318,8 +379,14 @@ export class DirectCalculationController extends QuestionController {
 
       case 'FRACTION':
         mathValues.whole_value = mathOutput.whole_value;
-        mathValues.numerator = mathOutput.fraction.numerator;
-        mathValues.denominator = mathOutput.fraction.denominator;
+        // Handle both nested format (mathOutput.fraction.numerator) and flattened format (mathOutput.numerator)
+        if (mathOutput.fraction) {
+          mathValues.numerator = mathOutput.fraction.numerator;
+          mathValues.denominator = mathOutput.fraction.denominator;
+        } else {
+          mathValues.numerator = mathOutput.numerator;
+          mathValues.denominator = mathOutput.denominator;
+        }
         mathValues.result = mathOutput.result;
         break;
 

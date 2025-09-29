@@ -47,7 +47,12 @@
       "Bash(find:*)",
       "Bash(git restore:*)",
       "Bash(bash:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(do echo \"=== Test $i ===\")",
+      "Bash(for i in {1..3})",
+      "Bash(for model in SHAPE_RECOGNITION COUNTING TIME_RATE)",
+      "Bash(do echo \"=== $model ===\")",
+      "Bash(for model in AREA_PERIMETER ANGLE_MEASUREMENT POSITION_DIRECTION)"
     ],
     "deny": [],
     "ask": [],

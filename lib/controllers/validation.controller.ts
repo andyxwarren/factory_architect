@@ -151,9 +151,9 @@ export class ValidationController extends QuestionController {
       },
       solution: {
         correctAnswer: {
-          value: correctAnswer,  // Return the actual numeric answer
-          displayText: this.formatValue(correctAnswer, '£'),
-          units: '£'
+          value: statementIsTrue ? 1 : 0,  // Use 1 for True, 0 for False
+          displayText: statementIsTrue ? 'True' : 'False',
+          units: ''
         },
         distractors,
         workingSteps: this.generateTrueFalseSteps(mathOutput, presentedAnswer, correctAnswer, statementIsTrue),
@@ -207,9 +207,9 @@ export class ValidationController extends QuestionController {
       },
       solution: {
         correctAnswer: {
-          value: correctAnswer,  // Return the actual numeric answer
-          displayText: this.formatValue(correctAnswer, '£'),
-          units: '£'
+          value: hasError ? 0 : 1,  // Use 0 for Incorrect, 1 for Correct
+          displayText: hasError ? 'Incorrect' : 'Correct',
+          units: ''
         },
         distractors,
         workingSteps: this.generateCheckWorkExplanation(workingSteps, hasError, correctAnswer),
@@ -262,7 +262,7 @@ export class ValidationController extends QuestionController {
       },
       solution: {
         correctAnswer: {
-          value: `Step ${errorStep + 1}`,
+          value: errorStep + 1, // Use numeric step number
           displayText: `Step ${errorStep + 1}`,
           units: ''
         },
@@ -582,9 +582,10 @@ export class ValidationController extends QuestionController {
   private async generateTrueFalseDistractors(correctAnswer: boolean): Promise<any[]> {
     return [
       {
-        value: !correctAnswer,
+        value: correctAnswer ? 0 : 1, // Use numeric values: 0 for True, 1 for False
+        displayText: correctAnswer ? 'False' : 'True',
         strategy: DistractorStrategy.LOGICAL_OPPOSITE,
-        rationale: correctAnswer ? 'Incorrectly identified as false' : 'Incorrectly identified as true'
+        reasoning: correctAnswer ? 'Incorrectly identified as false' : 'Incorrectly identified as true'
       }
     ];
   }
@@ -592,9 +593,10 @@ export class ValidationController extends QuestionController {
   private async generateCheckWorkDistractors(isCorrect: boolean): Promise<any[]> {
     return [
       {
-        value: isCorrect ? 'Incorrect' : 'Correct',
+        value: isCorrect ? 0 : 1, // Use numeric values: 0 for Incorrect, 1 for Correct
+        displayText: isCorrect ? 'Incorrect' : 'Correct',
         strategy: DistractorStrategy.LOGICAL_OPPOSITE,
-        rationale: isCorrect ? 'Incorrectly identified correct work as wrong' : 'Incorrectly identified wrong work as correct'
+        reasoning: isCorrect ? 'Incorrectly identified correct work as wrong' : 'Incorrectly identified wrong work as correct'
       }
     ];
   }
@@ -606,9 +608,10 @@ export class ValidationController extends QuestionController {
     for (let i = 0; i < totalSteps; i++) {
       if (i !== errorStep) {
         distractors.push({
-          value: `Step ${i + 1}`,
+          value: i + 1, // Use numeric step number
+          displayText: `Step ${i + 1}`,
           strategy: DistractorStrategy.CLOSE_BUT_WRONG,
-          rationale: `Incorrectly identified step ${i + 1} as containing the error`
+          reasoning: `Incorrectly identified step ${i + 1} as containing the error`
         });
       }
     }

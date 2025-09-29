@@ -188,19 +188,27 @@ export class ComparisonController extends QuestionController {
   private async generateDirectComparison(params: GenerationParams): Promise<ComparisonData> {
     const comparisonOutput = await this.generateMathOutput('COMPARISON', params.difficultyParams);
 
-    const options: ComparisonOption[] = comparisonOutput.options.map((option: any, index: number) => ({
-      label: String.fromCharCode(65 + index), // A, B, C...
-      quantity: option.quantity,
-      value: option.value,
-      displayText: option.quantity
-        ? `${option.quantity}ml for £${option.value.toFixed(2)}`
-        : `£${option.value.toFixed(2)}`
-    }));
+    const options: ComparisonOption[] = comparisonOutput.options.map((option: any, index: number) => {
+      const hasQuantity = option.quantity && option.quantity > 0;
+      return {
+        label: String.fromCharCode(65 + index), // A, B, C...
+        quantity: option.quantity,
+        price: option.value, // For COMPARISON model, price is the same as value
+        value: option.value,
+        unitRate: hasQuantity ? option.value / option.quantity : undefined,
+        displayText: hasQuantity
+          ? `${option.quantity}ml for £${option.value.toFixed(2)}`
+          : `£${option.value.toFixed(2)}`
+      };
+    });
+
+    // If we have quantity data, this is effectively a unit rate comparison
+    const hasQuantityData = options.some(opt => opt.quantity && opt.quantity > 0);
 
     return {
-      type: 'direct_value',
+      type: hasQuantityData ? 'unit_rate' : 'direct_value',
       options,
-      comparisonMetric: comparisonOutput.comparison_type || 'value',
+      comparisonMetric: hasQuantityData ? 'price_per_unit' : comparisonOutput.comparison_type || 'value',
       context: 'general'
     };
   }
@@ -254,11 +262,11 @@ export class ComparisonController extends QuestionController {
       difference = Math.abs(rates[0] - rates[1]);
       advantage = `${this.formatCurrency(difference)} per unit cheaper`;
     } else {
-      // For direct comparisons, higher is usually better
+      // For direct value comparisons, lower is better (better value for money)
       const values = data.options.map(opt => opt.value);
-      winnerIndex = values[0] > values[1] ? 0 : 1;
+      winnerIndex = values[0] < values[1] ? 0 : 1;
       difference = Math.abs(values[0] - values[1]);
-      advantage = `${this.formatCurrency(difference)} more`;
+      advantage = `${this.formatCurrency(difference)} cheaper`;
     }
 
     const winner = data.options[winnerIndex];
@@ -394,8 +402,12 @@ export class ComparisonController extends QuestionController {
 
     if (data.type === 'unit_rate') {
       data.options.forEach((option, index) => {
-        const unitRate = option.price! / option.quantity!;
-        steps.push(`${option.label}: £${option.price!.toFixed(2)} ÷ ${option.quantity} = ${this.formatCurrency(unitRate)} per unit`);
+        if (option.quantity && option.price != null && typeof option.price === 'number') {
+          const unitRate = option.price / option.quantity;
+          steps.push(`${option.label}: £${option.price.toFixed(2)} ÷ ${option.quantity} = ${this.formatCurrency(unitRate)} per unit`);
+        } else {
+          steps.push(`${option.label}: ${this.formatCurrency(option.value)}`);
+        }
       });
 
       const winner = data.options[solution.winner.index];

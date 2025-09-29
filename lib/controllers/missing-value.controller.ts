@@ -118,6 +118,11 @@ export class MissingValueController extends QuestionController {
       scenario
     );
 
+    // Validate that we have a proper missing value
+    if (missingValueParams.missingValue === undefined || missingValueParams.missingValue === null) {
+      throw new Error(`Missing value not properly calculated for ${params.mathModel}: ${missingValueParams.missingValue}`);
+    }
+
     // Create equation with missing value
     const equation = this.buildEquation(mathOutput, missingValueParams);
     const questionText = this.generateSimpleEquationText(scenario, equation, missingValueParams);
@@ -167,6 +172,11 @@ export class MissingValueController extends QuestionController {
       params.difficulty,
       scenario
     );
+
+    // Validate that we have a proper missing value
+    if (missingValueParams.missingValue === undefined || missingValueParams.missingValue === null) {
+      throw new Error(`Missing value not properly calculated for ${params.mathModel}: ${missingValueParams.missingValue}`);
+    }
 
     // Create balanced equation like: 15 + ? = 8 + 12
     const leftSide = this.buildEquation(mathOutput, missingValueParams);
@@ -225,6 +235,11 @@ export class MissingValueController extends QuestionController {
       scenario
     );
 
+    // Validate that we have a proper missing value
+    if (missingValueParams.missingValue === undefined || missingValueParams.missingValue === null) {
+      throw new Error(`Missing value not properly calculated for ${params.mathModel}: ${missingValueParams.missingValue}`);
+    }
+
     // Create function like: f(x) = 3x + 5, if f(?) = 20
     const functionRule = this.buildFunctionRule(mathOutput, missingValueParams);
     const equation = {
@@ -281,6 +296,11 @@ export class MissingValueController extends QuestionController {
       scenario
     );
 
+    // Validate that we have a proper missing value
+    if (missingValueParams.missingValue === undefined || missingValueParams.missingValue === null) {
+      throw new Error(`Missing value not properly calculated for ${params.mathModel}: ${missingValueParams.missingValue}`);
+    }
+
     // Create word-based equation
     const equation = this.buildWordEquation(mathOutput, missingValueParams, scenario);
     const questionText = this.generateWordEquationText(scenario, equation, missingValueParams);
@@ -317,6 +337,50 @@ export class MissingValueController extends QuestionController {
    * Determine missing value parameters based on context
    */
   private determineMissingValueParams(mathModel: string, mathOutput: any, difficulty: any): MissingValueParams {
+    // Extract operands based on operation type
+    let operand1: number | undefined;
+    let operand2: number | undefined;
+    let result: number | undefined;
+
+    switch (mathOutput.operation) {
+      case 'ADDITION':
+        if (mathOutput.operands && Array.isArray(mathOutput.operands)) {
+          operand1 = mathOutput.operands[0];
+          operand2 = mathOutput.operands[1];
+        }
+        result = mathOutput.result;
+        break;
+      case 'SUBTRACTION':
+        operand1 = mathOutput.minuend;
+        operand2 = mathOutput.subtrahend;
+        result = mathOutput.result;
+        break;
+      case 'MULTIPLICATION':
+        operand1 = mathOutput.multiplicand;
+        operand2 = mathOutput.multiplier;
+        result = mathOutput.result;
+        break;
+      case 'DIVISION':
+        operand1 = mathOutput.dividend;
+        operand2 = mathOutput.divisor;
+        result = mathOutput.quotient;
+        break;
+      default:
+        // Fallback to generic fields
+        operand1 = mathOutput.operand1 || mathOutput.operand_1;
+        operand2 = mathOutput.operand2 || mathOutput.operand_2;
+        result = mathOutput.result;
+    }
+
+    // Validate that we have the necessary values
+    if (operand1 === undefined || operand2 === undefined || result === undefined) {
+      console.warn(`Missing operands for ${mathOutput.operation}: operand1=${operand1}, operand2=${operand2}, result=${result}`);
+      // Use fallback values to prevent crashes
+      operand1 = operand1 ?? 5;
+      operand2 = operand2 ?? 3;
+      result = result ?? 8;
+    }
+
     // Determine missing position
     const positions = ['operand1', 'operand2', 'result'];
     const missingPosition = positions[Math.floor(Math.random() * positions.length)] as MissingValueParams['missingPosition'];
@@ -339,20 +403,20 @@ export class MissingValueController extends QuestionController {
 
     switch (missingPosition) {
       case 'operand1':
-        missingValue = mathOutput.operand_1;
-        providedValues = [mathOutput.operand_2, mathOutput.result];
+        missingValue = operand1;
+        providedValues = [operand2, result];
         break;
       case 'operand2':
-        missingValue = mathOutput.operand_2;
-        providedValues = [mathOutput.operand_1, mathOutput.result];
+        missingValue = operand2;
+        providedValues = [operand1, result];
         break;
       case 'result':
-        missingValue = mathOutput.result;
-        providedValues = [mathOutput.operand_1, mathOutput.operand_2];
+        missingValue = result;
+        providedValues = [operand1, operand2];
         break;
       default:
-        missingValue = mathOutput.result;
-        providedValues = [mathOutput.operand_1, mathOutput.operand_2];
+        missingValue = result;
+        providedValues = [operand1, operand2];
     }
 
     return {
