@@ -2,9 +2,9 @@
 
 Factory Architect is a TypeScript-based educational question generator for UK National Curriculum Mathematics. The project implements a sophisticated **Enhanced Question Generation System** that combines mathematical accuracy with pedagogical variety.
 
-> 📚 **New Features Documentation**: See [FEATURES.md](./FEATURES.md) for the complete feature list, recent improvements, and usage examples.
+> 📚 **Complete Documentation**: See [docs/README.md](./docs/README.md) for comprehensive documentation, guides, and technical details.
 >
-> 🏗️ **Architecture Details**: See [ARCHITECTURE.md](./ARCHITECTURE.md) for system design and implementation details.
+> 🚀 **Recent Updates**: See [docs/status/CHANGELOG.md](./docs/status/CHANGELOG.md) for the latest bug fixes and improvements.
 
 ## Architecture Overview
 
@@ -191,12 +191,9 @@ Each model includes:
 - `lib/adapters/` - Backward compatibility and migration tools
 
 ### Documentation & Configuration
+- `docs/` - Complete documentation (guides, architecture, implementation, status)
 - `context/` - UK curriculum data and example questions
-- `ARCHITECTURE.md` - Detailed technical architecture
-- `IMPLEMENTATION_STATUS.md` - Feature implementation tracking
-- `TESTING_GUIDE.md` - Testing instructions and examples
 - `CLAUDE.md` - AI assistant instructions
-- `new_features.md` - Enhanced system specification
 
 ## Development Workflow
 
@@ -206,8 +203,19 @@ Each model includes:
 4. Build story templates and rendering logic
 5. Integrate with the main generation service
 
+## Documentation
+
+Comprehensive documentation is organized in the `docs/` directory:
+
+- **[Documentation Hub](docs/README.md)** - Start here for navigation
+- **[User Guide](docs/guides/USER_GUIDE.md)** - For teachers and educators
+- **[System Architecture](docs/architecture/SYSTEM_ARCHITECTURE.md)** - Technical details
+- **[Enhanced Question System](docs/implementation/ENHANCED_QUESTION_SYSTEM.md)** - Feature documentation
+- **[Changelog](docs/status/CHANGELOG.md)** - Recent updates and fixes
+- **[Project Status](docs/status/PROJECT_STATUS.md)** - Implementation progress
+
 ## Contributing
 
 The project prioritizes educational accuracy, scalable question generation, and flexible difficulty progression to support diverse learning needs across UK primary mathematics education.
 
-For detailed technical architecture and implementation guidance, see `ARCHITECTURE.md`.
+For detailed technical architecture and implementation guidance, see the [documentation](docs/README.md).

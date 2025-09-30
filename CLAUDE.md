@@ -175,13 +175,36 @@ npm run lint     # Run ESLint
 
 **Important**: After making changes to mathematical models or type definitions, always run `npm run lint` to ensure code quality and consistency. Note: `npm run typecheck` is not available - TypeScript checking is handled during build.
 
-## Testing Interface
+## Documentation
 
-Access the model testing interface at `/test` when running the development server. This provides:
+Comprehensive documentation is available in the `docs/` directory:
+- **[Documentation Hub](docs/README.md)** - Central navigation for all documentation
+- **[Architecture Overview](docs/architecture/OVERVIEW.md)** - High-level system design
+- **[Enhanced Question System](docs/implementation/ENHANCED_QUESTION_SYSTEM.md)** - Complete feature documentation
+- **[Difficulty System](docs/implementation/DIFFICULTY_SYSTEM.md)** - Sub-level progression guide
+- **[Changelog](docs/status/CHANGELOG.md)** - Recent bug fixes and updates
+- **[User Guide](docs/guides/USER_GUIDE.md)** - Non-technical documentation
+
+## Testing Interfaces
+
+Access testing interfaces when running the development server:
+
+**Model Testing** at `/test`:
 - Interactive parameter controls for each mathematical model
 - Real-time question generation and preview
 - Batch testing with statistical analysis
 - Export functionality for generated questions
+
+**Enhanced Question Management** at `/curriculum-manager`:
+- Format selection and testing
+- Scenario preview and customization
+- Generation tracking and transparency
+- CSV/JSON export with full metadata
+
+**Curriculum Testing** at `/curriculum-tester`:
+- Curriculum-based question generation
+- Strand and substrand selection
+- Year level progression testing
 
 ## Key Files & Patterns
 
@@ -194,8 +217,9 @@ Access the model testing interface at `/test` when running the development serve
 - `app/api/generate/enhanced/route.ts` - Enhanced API endpoint with full features
 - `app/api/curriculum-bulk/route.ts` - Bulk curriculum generation
 - `context/CURRICULUM_DATA.md` - UK National Curriculum mapping
-- `FEATURES.md` - Complete feature documentation and usage examples
-- `ARCHITECTURE.md` - Detailed system design and implementation
+- `docs/implementation/ENHANCED_QUESTION_SYSTEM.md` - Complete feature documentation and usage examples
+- `docs/architecture/SYSTEM_ARCHITECTURE.md` - Detailed system design and implementation
+- `docs/status/CHANGELOG.md` - Recent bug fixes and updates
 
 ### Model Implementation Pattern
 All mathematical models follow this structure:
