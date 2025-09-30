@@ -296,7 +296,7 @@ export class DistractorEngine {
       const magnitude = Math.pow(10, Math.floor(Math.log10(correct)));
 
       // Carry error - off by one magnitude
-      const carryError = correct + magnitude;
+      const carryError = Math.round((correct + magnitude) * 100) / 100;
       if (carryError !== correct) {
         distractors.push({
           value: carryError,
@@ -307,7 +307,7 @@ export class DistractorEngine {
       }
 
       // Forget to carry
-      const forgetCarry = correct - magnitude / 10;
+      const forgetCarry = Math.round((correct - magnitude / 10) * 100) / 100;
       if (forgetCarry > 0 && forgetCarry !== correct) {
         distractors.push({
           value: forgetCarry,
@@ -335,10 +335,10 @@ export class DistractorEngine {
 
         switch (context.operation) {
           case 'ADDITION':
-            partial = a + b;
+            partial = Math.round((a + b) * 100) / 100;
             break;
           case 'MULTIPLICATION':
-            partial = a * b;
+            partial = Math.round((a * b) * 100) / 100;
             break;
           default:
             return distractors;
@@ -770,10 +770,13 @@ export class DistractorEngine {
       distractorValue = Math.abs(distractorValue);
     }
 
+    // Round to 2 decimal places
+    const roundedValue = Math.round(distractorValue * 100) / 100;
+
     return {
-      value: Math.round(distractorValue * 100) / 100, // Round to 2 decimal places
+      value: roundedValue,
       strategy: fallback.strategy,
-      displayText: distractorValue.toString(),
+      displayText: this.formatValue(roundedValue),
       reasoning: fallback.description
     };
   }

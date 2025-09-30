@@ -590,14 +590,18 @@ export class DirectCalculationController extends QuestionController {
       narrativeValues.character = scenario.characters[0].name;
     }
     if (scenario.items && scenario.items.length > 0) {
-      narrativeValues.items = scenario.items.map((item: any) => item.name);
+      // Limit items to actual operand count to prevent excessive item lists
+      const operandCount = mathOutput.operands?.length || mathOutput.operand_count || 1;
+      const maxItems = Math.min(scenario.items.length, operandCount, 5); // Cap at 5 items max
+
+      narrativeValues.items = scenario.items.slice(0, maxItems).map((item: any) => item.name);
       narrativeValues.item = scenario.items[0]?.name || 'item';
 
       // Generate articles for items
       narrativeValues.article = getArticle(scenario.items[0]?.name || 'item');
 
-      // Generate articles for up to 10 items (for multi-item scenarios)
-      for (let i = 0; i < Math.min(scenario.items.length, 10); i++) {
+      // Generate articles for items based on operand count (max 10 for edge cases)
+      for (let i = 0; i < Math.min(maxItems, 10); i++) {
         const itemName = scenario.items[i]?.name || 'item';
         narrativeValues[`article${i + 1}`] = getArticle(itemName);
         narrativeValues[`item${i + 1}`] = itemName;

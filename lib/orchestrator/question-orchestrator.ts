@@ -1063,13 +1063,25 @@ export class QuestionRenderer {
       replacements.student = characterName;
     }
 
-    // Add items
+    // Add items (only if not already set in narrativeValues)
     if (definition.scenario?.items?.length > 0) {
-      replacements.items = definition.scenario.items.map((item: any) => item.name || item).join(', ');
-      replacements.item = definition.scenario.items[0]?.name || definition.scenario.items[0] || 'item';
-      // Add individual item references
+      // Don't overwrite items if they were explicitly set in narrativeValues (to respect operand count limits)
+      if (!replacements.items) {
+        replacements.items = definition.scenario.items.map((item: any) => item.name || item).join(', ');
+      } else if (Array.isArray(replacements.items)) {
+        // Convert array to comma-separated string
+        replacements.items = replacements.items.join(', ');
+      }
+
+      if (!replacements.item) {
+        replacements.item = definition.scenario.items[0]?.name || definition.scenario.items[0] || 'item';
+      }
+
+      // Add individual item references (only if not already set)
       definition.scenario.items.forEach((item: any, index: number) => {
-        replacements[`item${index + 1}`] = item.name || item;
+        if (!replacements[`item${index + 1}`]) {
+          replacements[`item${index + 1}`] = item.name || item;
+        }
       });
     }
 
@@ -1244,9 +1256,14 @@ export class QuestionRenderer {
 
     // Add correct answer
     if (definition.solution?.correctAnswer) {
+      // Round value to 2 decimal places for consistency
+      const roundedValue = typeof definition.solution.correctAnswer.value === 'number'
+        ? Math.round(definition.solution.correctAnswer.value * 100) / 100
+        : definition.solution.correctAnswer.value;
+
       options.push({
-        text: definition.solution.correctAnswer.displayText || String(definition.solution.correctAnswer.value),
-        value: definition.solution.correctAnswer.value,
+        text: definition.solution.correctAnswer.displayText || this.formatValue(roundedValue),
+        value: roundedValue,
         index: 0
       });
     }
@@ -1254,9 +1271,14 @@ export class QuestionRenderer {
     // Add distractors
     if (definition.solution?.distractors && Array.isArray(definition.solution.distractors)) {
       definition.solution.distractors.forEach((distractor, index) => {
+        // Round value to 2 decimal places for consistency
+        const roundedValue = typeof distractor.value === 'number'
+          ? Math.round(distractor.value * 100) / 100
+          : distractor.value;
+
         options.push({
-          text: distractor.displayText || String(distractor.value),
-          value: distractor.value,
+          text: distractor.displayText || this.formatValue(roundedValue),
+          value: roundedValue,
           index: index + 1
         });
       });

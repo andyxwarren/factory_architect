@@ -53,7 +53,12 @@
       "Bash(for model in SHAPE_RECOGNITION COUNTING TIME_RATE)",
       "Bash(do echo \"=== $model ===\")",
       "Bash(for model in AREA_PERIMETER ANGLE_MEASUREMENT POSITION_DIRECTION)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(for i in {1..10})",
+      "Bash(do curl -s -X POST http://localhost:3000/api/generate/enhanced -H \"Content-Type: application/json\" -d '{\"\"\"\"model_id\"\"\"\":\"\"\"\"ADDITION\"\"\"\",\"\"\"\"difficulty_level\"\"\"\":\"\"\"\"4.1\"\"\"\"}')",
+      "Bash(for model in ADDITION SUBTRACTION MULTIPLICATION DIVISION)",
+      "Bash(for i in {1..15})",
+      "Bash(do curl -s -X POST http://localhost:3000/api/generate/enhanced -H \"Content-Type: application/json\" -d '{\"\"\"\"model_id\"\"\"\":\"\"\"\"ADDITION\"\"\"\",\"\"\"\"difficulty_level\"\"\"\":\"\"\"\"4.2\"\"\"\"}')"
     ],
     "deny": [],
     "ask": [],

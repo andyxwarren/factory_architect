@@ -563,13 +563,13 @@ export class EstimationController extends QuestionController {
 
     // Poor estimates (too high/low)
     distractors.push({
-      value: estimatedValue * 1.5,
+      value: Math.round(estimatedValue * 1.5 * 100) / 100,
       strategy: DistractorStrategy.MAGNITUDE_ERROR,
       rationale: 'Overestimated significantly'
     });
 
     distractors.push({
-      value: estimatedValue * 0.6,
+      value: Math.round(estimatedValue * 0.6 * 100) / 100,
       strategy: DistractorStrategy.MAGNITUDE_ERROR,
       rationale: 'Underestimated significantly'
     });
@@ -582,20 +582,20 @@ export class EstimationController extends QuestionController {
 
     // One order higher/lower
     distractors.push({
-      value: magnitude * 10,
+      value: Math.round(magnitude * 10 * 100) / 100,
       strategy: DistractorStrategy.MAGNITUDE_ERROR,
       rationale: 'One order of magnitude too high'
     });
 
     distractors.push({
-      value: magnitude / 10,
+      value: Math.round(magnitude / 10 * 100) / 100,
       strategy: DistractorStrategy.MAGNITUDE_ERROR,
       rationale: 'One order of magnitude too low'
     });
 
     // Off by factor of 2
     distractors.push({
-      value: magnitude * 2,
+      value: Math.round(magnitude * 2 * 100) / 100,
       strategy: DistractorStrategy.MAGNITUDE_ERROR,
       rationale: 'Doubled the magnitude'
     });

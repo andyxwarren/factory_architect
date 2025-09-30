@@ -706,7 +706,7 @@ export class MissingValueController extends QuestionController {
     // Common errors for missing value problems:
 
     // 1. Using wrong operation
-    const wrongOpValue = this.calculateWithWrongOperation(mathOutput, missingValueParams);
+    const wrongOpValue = Math.round(this.calculateWithWrongOperation(mathOutput, missingValueParams) * 100) / 100;
     distractors.push({
       value: wrongOpValue,
       strategy: DistractorStrategy.WRONG_OPERATION,
@@ -714,7 +714,7 @@ export class MissingValueController extends QuestionController {
     });
 
     // 2. Arithmetic error (off by small amount)
-    const arithError = missingValue + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
+    const arithError = Math.round((missingValue + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1)) * 100) / 100;
     distractors.push({
       value: arithError,
       strategy: DistractorStrategy.CALCULATION_ERROR,
@@ -734,7 +734,7 @@ export class MissingValueController extends QuestionController {
     }
 
     // 4. Order of operations error
-    const orderError = this.calculateOrderError(mathOutput, missingValueParams);
+    const orderError = Math.round(this.calculateOrderError(mathOutput, missingValueParams) * 100) / 100;
     if (orderError !== missingValue) {
       distractors.push({
         value: orderError,
