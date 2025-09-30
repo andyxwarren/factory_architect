@@ -467,11 +467,23 @@ export class DirectCalculationController extends QuestionController {
         break;
 
       case 'CHANGE_CALCULATION':
-        mathValues.purchase_amount = mathOutput.purchase_amount;
-        mathValues.payment = mathOutput.payment;
-        mathValues.change = mathOutput.change || mathOutput.result;
-        mathValues.result = mathOutput.result;
+        // Map from CHANGE_CALCULATION model output names
+        mathValues.purchase_amount = mathOutput.total_cost || mathOutput.purchase_amount;
+        mathValues.payment = mathOutput.payment_amount || mathOutput.payment;
+        mathValues.change = mathOutput.change_amount || mathOutput.change || mathOutput.result;
+        mathValues.result = mathOutput.change_amount || mathOutput.result;
         units.result = '£';
+
+        // Format payment for narrative template
+        const payment = mathOutput.payment_amount || mathOutput.payment;
+        const purchase = mathOutput.total_cost || mathOutput.purchase_amount;
+
+        if (payment !== undefined) {
+          narrativeValues['payment'] = MoneyContextGenerator.formatMoney(payment / 100); // Convert from pence to pounds
+        }
+        if (purchase !== undefined) {
+          narrativeValues['price'] = MoneyContextGenerator.formatMoney(purchase / 100); // Convert from pence to pounds
+        }
         break;
 
       case 'MONEY_COMBINATIONS':

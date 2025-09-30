@@ -245,10 +245,8 @@ export class ChangeCalculationModel implements IMathModel<ChangeCalculationDiffi
       return Math.min(generatedPayment, maxReasonablePayment);
     }
 
-    if (!forceChange && Math.random() < 0.2) {
-      // Sometimes allow exact payment
-      return itemCost;
-    }
+    // Always force change for proper multiple-choice questions
+    // Removed the exact payment option to ensure distractors make sense
 
     // Prefer smaller, more realistic payments
     const sortedPayments = availablePayments.sort((a, b) => {

@@ -427,7 +427,7 @@ export class DistractorEngine {
       const variations = [1, -1, 2, -2, 5, -5, 10, -10];
 
       for (const variation of variations) {
-        const candidate = correct + variation;
+        const candidate = Math.round((correct + variation) * 100) / 100; // Round to 2 decimal places
         if (candidate > 0 && candidate !== correct) {
           distractors.push({
             value: candidate,
