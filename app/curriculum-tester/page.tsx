@@ -124,10 +124,9 @@ const CurriculumTesterPage = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          mathModel: testingState.selectedModel,
-          year: testingState.selectedYear,
-          subLevel: 2, // Standard difficulty
-          questionFormat: 'DIRECT_CALCULATION'
+          model_id: testingState.selectedModel,
+          difficulty_level: `${testingState.selectedYear}.2`, // Use enhanced difficulty format (X.2 = Developing)
+          context_type: 'money'
         })
       });
 
