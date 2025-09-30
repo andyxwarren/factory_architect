@@ -54,7 +54,30 @@ export class DistractorEngine {
     }
 
     // 3. Filter and select best distractors
-    return this.selectBestDistractors(candidates, correctAnswer, count);
+    const selectedDistractors = this.selectBestDistractors(candidates, correctAnswer, count);
+
+    // 4. Ensure all distractors have valid values, strategies, and reasoning
+    const validDistractors = selectedDistractors.filter(d =>
+      d &&
+      d.value != null &&
+      !isNaN(Number(d.value)) &&
+      d.strategy != null &&
+      d.reasoning != null &&
+      typeof d.reasoning === 'string' &&
+      d.reasoning.length > 0
+    );
+
+    // 5. If not enough valid distractors, generate fallbacks
+    while (validDistractors.length < count) {
+      const fallbackDistractor = this.generateFallbackDistractor(correctAnswer, context, validDistractors.length);
+      if (fallbackDistractor) {
+        validDistractors.push(fallbackDistractor);
+      } else {
+        break; // Can't generate more fallbacks
+      }
+    }
+
+    return validDistractors.slice(0, count);
   }
 
   /**
@@ -186,18 +209,24 @@ export class DistractorEngine {
 
       switch (context.operation) {
         case 'ADDITION':
-          if (a - b > 0 && a - b !== correct) {
+          // Calculate wrong operation results with proper rounding for decimals
+          const subtractResult = Number((a - b).toFixed(2));
+          const multiplyResult = Number((a * b).toFixed(2));
+
+          // Only add distractor if the calculation makes sense and differs from correct answer
+          if (subtractResult > 0 && Math.abs(subtractResult - correct) > 0.01) {
             distractors.push({
-              value: a - b,
-              displayText: String(a - b),
+              value: subtractResult,
+              displayText: this.formatValue(subtractResult),
               strategy: DistractorStrategy.WRONG_OPERATION,
               reasoning: 'Subtracted instead of adding'
             });
           }
-          if (a * b !== correct) {
+
+          if (Math.abs(multiplyResult - correct) > 0.01) {
             distractors.push({
-              value: a * b,
-              displayText: String(a * b),
+              value: multiplyResult,
+              displayText: this.formatValue(multiplyResult),
               strategy: DistractorStrategy.WRONG_OPERATION,
               reasoning: 'Multiplied instead of adding'
             });
@@ -205,10 +234,11 @@ export class DistractorEngine {
           break;
 
         case 'SUBTRACTION':
-          if (a + b !== correct) {
+          const addResult = Number((a + b).toFixed(2));
+          if (Math.abs(addResult - correct) > 0.01) {
             distractors.push({
-              value: a + b,
-              displayText: String(a + b),
+              value: addResult,
+              displayText: this.formatValue(addResult),
               strategy: DistractorStrategy.WRONG_OPERATION,
               reasoning: 'Added instead of subtracting'
             });
@@ -216,18 +246,21 @@ export class DistractorEngine {
           break;
 
         case 'MULTIPLICATION':
-          if (a + b !== correct) {
+          const multiplyAddResult = Number((a + b).toFixed(2));
+          const multiplySubtractResult = Number((a - b).toFixed(2));
+
+          if (Math.abs(multiplyAddResult - correct) > 0.01) {
             distractors.push({
-              value: a + b,
-              displayText: String(a + b),
+              value: multiplyAddResult,
+              displayText: this.formatValue(multiplyAddResult),
               strategy: DistractorStrategy.WRONG_OPERATION,
               reasoning: 'Added instead of multiplying'
             });
           }
-          if (a - b > 0 && a - b !== correct) {
+          if (multiplySubtractResult > 0 && Math.abs(multiplySubtractResult - correct) > 0.01) {
             distractors.push({
-              value: a - b,
-              displayText: String(a - b),
+              value: multiplySubtractResult,
+              displayText: this.formatValue(multiplySubtractResult),
               strategy: DistractorStrategy.WRONG_OPERATION,
               reasoning: 'Subtracted instead of multiplying'
             });
@@ -235,10 +268,11 @@ export class DistractorEngine {
           break;
 
         case 'DIVISION':
-          if (a - b > 0 && a - b !== correct) {
+          const divisionSubtractResult = Number((a - b).toFixed(2));
+          if (divisionSubtractResult > 0 && Math.abs(divisionSubtractResult - correct) > 0.01) {
             distractors.push({
-              value: a - b,
-              displayText: String(a - b),
+              value: divisionSubtractResult,
+              displayText: this.formatValue(divisionSubtractResult),
               strategy: DistractorStrategy.WRONG_OPERATION,
               reasoning: 'Subtracted instead of dividing'
             });
@@ -266,7 +300,7 @@ export class DistractorEngine {
       if (carryError !== correct) {
         distractors.push({
           value: carryError,
-          displayText: String(carryError),
+          displayText: this.formatValue(carryError),
           strategy: DistractorStrategy.PLACE_VALUE_ERROR,
           reasoning: 'Error in carrying to next column'
         });
@@ -277,7 +311,7 @@ export class DistractorEngine {
       if (forgetCarry > 0 && forgetCarry !== correct) {
         distractors.push({
           value: forgetCarry,
-          displayText: String(forgetCarry),
+          displayText: this.formatValue(forgetCarry),
           strategy: DistractorStrategy.PLACE_VALUE_ERROR,
           reasoning: 'Forgot to carry'
         });
@@ -313,7 +347,7 @@ export class DistractorEngine {
         if (partial !== correct) {
           distractors.push({
             value: partial,
-            displayText: String(partial),
+            displayText: this.formatValue(partial),
             strategy: DistractorStrategy.PARTIAL_CALCULATION,
             reasoning: 'Stopped calculation early'
           });
@@ -339,7 +373,7 @@ export class DistractorEngine {
         if (wrongMultiply !== correct) {
           distractors.push({
             value: wrongMultiply,
-            displayText: String(wrongMultiply),
+            displayText: this.formatValue(wrongMultiply),
             strategy: DistractorStrategy.UNIT_CONFUSION,
             reasoning: 'Multiplied by percentage without converting to decimal'
           });
@@ -350,7 +384,7 @@ export class DistractorEngine {
         if (wrongAdd !== correct) {
           distractors.push({
             value: wrongAdd,
-            displayText: String(wrongAdd),
+            displayText: this.formatValue(wrongAdd),
             strategy: DistractorStrategy.UNIT_CONFUSION,
             reasoning: 'Added percentage as absolute value'
           });
@@ -397,7 +431,7 @@ export class DistractorEngine {
         if (candidate > 0 && candidate !== correct) {
           distractors.push({
             value: candidate,
-            displayText: String(candidate),
+            displayText: this.formatValue(candidate),
             strategy: DistractorStrategy.CLOSE_VALUE,
             reasoning: `Off by ${Math.abs(variation)}`
           });
@@ -425,7 +459,7 @@ export class DistractorEngine {
         if (tenthOf >= 1 && tenthOf !== correct) {
           distractors.push({
             value: tenthOf,
-            displayText: String(tenthOf),
+            displayText: this.formatValue(tenthOf),
             strategy: DistractorStrategy.OFF_BY_MAGNITUDE,
             reasoning: 'Result is 10 times too small'
           });
@@ -434,7 +468,7 @@ export class DistractorEngine {
         if (tenTimes !== correct) {
           distractors.push({
             value: tenTimes,
-            displayText: String(tenTimes),
+            displayText: this.formatValue(tenTimes),
             strategy: DistractorStrategy.OFF_BY_MAGNITUDE,
             reasoning: 'Result is 10 times too large'
           });
@@ -492,7 +526,7 @@ export class DistractorEngine {
             if (wrongResult !== correct) {
               return [{
                 value: wrongResult,
-                displayText: String(wrongResult),
+                displayText: this.formatValue(wrongResult),
                 strategy: DistractorStrategy.COMMON_MISCONCEPTION,
                 reasoning: 'Forgot to carry when adding'
               }];
@@ -517,7 +551,7 @@ export class DistractorEngine {
             if (nonZero && nonZero !== correct) {
               return [{
                 value: nonZero,
-                displayText: String(nonZero),
+                displayText: this.formatValue(nonZero),
                 strategy: DistractorStrategy.COMMON_MISCONCEPTION,
                 reasoning: 'Incorrectly applied zero property'
               }];
@@ -540,7 +574,7 @@ export class DistractorEngine {
           // Generate counting errors
           return [{
             value: correct - 1,
-            displayText: String(correct - 1),
+            displayText: this.formatValue(correct - 1),
             strategy: DistractorStrategy.COMMON_MISCONCEPTION,
             reasoning: 'Counting error'
           }];
@@ -599,6 +633,64 @@ export class DistractorEngine {
   }
 
   /**
+   * Format values according to context (prevents floating point precision issues)
+   */
+  private formatValue(value: number, units?: string, decimalPlaces: number = 2): string {
+    if (value === undefined || value === null) {
+      console.warn('formatValue called with undefined/null value in DistractorEngine');
+      return '0'; // Return a safe default instead of crashing
+    }
+
+    if (typeof value !== 'number') {
+      console.warn(`formatValue expects a number, got ${typeof value}:`, value);
+      const numericValue = Number(value);
+      if (isNaN(numericValue)) {
+        return '0';
+      }
+      value = numericValue;
+    }
+
+    // Fix floating point precision issues by rounding to 10 decimal places first
+    value = Math.round(value * Math.pow(10, 10)) / Math.pow(10, 10);
+
+    if (units === '£' || units === 'pounds') {
+      return this.formatCurrency(value);
+    }
+
+    if (Number.isInteger(value)) {
+      return value.toString();
+    }
+
+    // Format with specified decimal places and remove unnecessary trailing zeros
+    let formatted = value.toFixed(decimalPlaces);
+
+    // Remove trailing zeros after decimal point, but keep at least one decimal place for non-integers
+    if (formatted.includes('.')) {
+      formatted = formatted.replace(/\.?0+$/, '');
+      // If we removed all decimal places, add back one if original had decimals
+      if (!formatted.includes('.') && decimalPlaces > 0 && value % 1 !== 0) {
+        formatted += '.0';
+      }
+    }
+
+    return formatted;
+  }
+
+  /**
+   * Format currency values (prevents floating point precision issues)
+   */
+  private formatCurrency(value: number): string {
+    // Fix floating point precision issues
+    value = Math.round(value * Math.pow(10, 10)) / Math.pow(10, 10);
+
+    if (value >= 1) {
+      return `£${value.toFixed(2)}`;
+    } else {
+      return `${Math.round(value * 100)}p`;
+    }
+  }
+
+  /**
    * Ensure diversity in distractor strategies
    */
   private ensureStrategyDiversity(distractors: Distractor[]): Distractor[] {
@@ -630,5 +722,59 @@ export class DistractorEngine {
     }
 
     return diverse;
+  }
+
+  /**
+   * Generate a fallback distractor when main strategies fail
+   */
+  private generateFallbackDistractor(
+    correctAnswer: any,
+    context: DistractorContext,
+    index: number
+  ): Distractor | null {
+    const answerValue = typeof correctAnswer === 'object' ? correctAnswer.value : correctAnswer;
+
+    if (typeof answerValue !== 'number' || isNaN(answerValue)) {
+      return null;
+    }
+
+    // Generate fallback values based on the index
+    const fallbackStrategies = [
+      { modifier: 1, strategy: DistractorStrategy.CLOSE_VALUE, description: 'Off by one' },
+      { modifier: -1, strategy: DistractorStrategy.CLOSE_VALUE, description: 'Off by one (lower)' },
+      { modifier: 0.5, strategy: DistractorStrategy.MAGNITUDE_ERROR, description: 'Half the correct value' }
+    ];
+
+    if (index >= fallbackStrategies.length) {
+      return null;
+    }
+
+    const fallback = fallbackStrategies[index];
+    let distractorValue: number;
+
+    if (fallback.modifier < 1 && fallback.modifier > 0) {
+      // Multiplicative modifier
+      distractorValue = answerValue * fallback.modifier;
+    } else {
+      // Additive modifier
+      distractorValue = answerValue + fallback.modifier;
+    }
+
+    // Ensure the distractor is different from the correct answer
+    if (Math.abs(distractorValue - answerValue) < 0.01) {
+      distractorValue = answerValue + (index + 1) * 5; // Add a larger offset
+    }
+
+    // Ensure non-negative values for most contexts
+    if (distractorValue < 0 && context.format !== QuestionFormat.COMPARISON) {
+      distractorValue = Math.abs(distractorValue);
+    }
+
+    return {
+      value: Math.round(distractorValue * 100) / 100, // Round to 2 decimal places
+      strategy: fallback.strategy,
+      displayText: distractorValue.toString(),
+      reasoning: fallback.description
+    };
   }
 }

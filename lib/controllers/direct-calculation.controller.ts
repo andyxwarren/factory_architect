@@ -17,6 +17,7 @@ import {
   FormattingOptions
 } from '@/lib/types/question-formats';
 import { MoneyContextGenerator } from '@/lib/story-engine/contexts/money.context';
+import { getArticle } from '@/lib/utils/grammar';
 
 /**
  * Generates direct calculation questions like "What is 25 + 17?"
@@ -205,8 +206,9 @@ export class DirectCalculationController extends QuestionController {
           if (isMoney && realisticPrices.length > 0) {
             const realisticResult = realisticPrices.reduce((sum, price) => sum + price, 0);
             mathValues.result = Math.round(realisticResult * 100) / 100; // Round to 2 decimal places
-            // Update mathOutput.result as well for consistency
+            // Update mathOutput for consistency (for distractor generation)
             mathOutput.result = mathValues.result;
+            mathOutput.operands = realisticPrices;
           }
         } else {
           // Individual properties format
@@ -221,6 +223,8 @@ export class DirectCalculationController extends QuestionController {
                 narrativeValues[`price${i}`] = MoneyContextGenerator.formatMoney(realisticPrice);
                 // Update mathValues to match realistic prices for consistency
                 mathValues[operandKey] = realisticPrice;
+                // Update mathOutput operand for consistency (for distractor generation)
+                mathOutput[operandKey] = realisticPrice;
               } else {
                 narrativeValues[`price${i}`] = String(mathOutput[operandKey]);
               }
@@ -231,8 +235,9 @@ export class DirectCalculationController extends QuestionController {
           if (isMoney && realisticPrices.length > 0) {
             const realisticResult = realisticPrices.reduce((sum, price) => sum + price, 0);
             mathValues.result = Math.round(realisticResult * 100) / 100; // Round to 2 decimal places
-            // Update mathOutput.result as well for consistency
+            // Update mathOutput for consistency (for distractor generation)
             mathOutput.result = mathValues.result;
+            mathOutput.operands = realisticPrices;
           }
         }
 
@@ -271,9 +276,17 @@ export class DirectCalculationController extends QuestionController {
         }
         if (mathOutput.minuend !== undefined) {
           if (isMoneySubtraction) {
-            // For payment, round to sensible amounts (£5, £10, £20, etc.)
+            // For payment, round to sensible amounts with year-based caps
             const price = parseFloat(narrativeValues['price']?.replace(/[£,]/g, '') || '5');
-            realisticPayment = Math.ceil(price / 5) * 5; // Round up to nearest £5
+
+            // Apply year-based maximum payment logic (same as CHANGE_CALCULATION)
+            const yearBasedMax = this.getYearBasedMaxPayment(realisticPrice);
+            const maxReasonablePayment = Math.min(price * 5, yearBasedMax);
+
+            // Round up to nearest £5, but cap at year-appropriate maximum
+            const roundedPayment = Math.ceil(price / 5) * 5;
+            realisticPayment = Math.min(roundedPayment, maxReasonablePayment);
+
             narrativeValues['payment'] = MoneyContextGenerator.formatMoney(realisticPayment);
             // Update mathValues to match realistic payment for consistency
             mathValues.minuend = realisticPayment;
@@ -567,6 +580,16 @@ export class DirectCalculationController extends QuestionController {
     if (scenario.items && scenario.items.length > 0) {
       narrativeValues.items = scenario.items.map((item: any) => item.name);
       narrativeValues.item = scenario.items[0]?.name || 'item';
+
+      // Generate articles for items
+      narrativeValues.article = getArticle(scenario.items[0]?.name || 'item');
+
+      // Generate articles for up to 10 items (for multi-item scenarios)
+      for (let i = 0; i < Math.min(scenario.items.length, 10); i++) {
+        const itemName = scenario.items[i]?.name || 'item';
+        narrativeValues[`article${i + 1}`] = getArticle(itemName);
+        narrativeValues[`item${i + 1}`] = itemName;
+      }
     }
     if (scenario.setting) {
       narrativeValues.location = scenario.setting.location;
@@ -785,17 +808,33 @@ export class DirectCalculationController extends QuestionController {
    * Extract operands from math output for distractor generation
    */
   private extractOperands(mathOutput: any): number[] {
-    if (mathOutput.operands) {
+    // Check for operands array format first
+    if (mathOutput.operands && Array.isArray(mathOutput.operands)) {
       return mathOutput.operands;
     }
 
     const operands: number[] = [];
+
+    // Check for specific named operands (subtraction, multiplication, division)
     if (mathOutput.minuend !== undefined) operands.push(mathOutput.minuend);
     if (mathOutput.subtrahend !== undefined) operands.push(mathOutput.subtrahend);
     if (mathOutput.multiplicand !== undefined) operands.push(mathOutput.multiplicand);
     if (mathOutput.multiplier !== undefined) operands.push(mathOutput.multiplier);
     if (mathOutput.dividend !== undefined) operands.push(mathOutput.dividend);
     if (mathOutput.divisor !== undefined) operands.push(mathOutput.divisor);
+
+    // Check for numbered operands (operand_1, operand_2, etc.) - used by ADDITION
+    if (operands.length === 0) {
+      for (let i = 1; i <= 10; i++) {
+        const key = `operand_${i}`;
+        if (mathOutput[key] !== undefined) {
+          operands.push(mathOutput[key]);
+        } else if (i > 2) {
+          // Stop if we've checked past operand_2 and found no more
+          break;
+        }
+      }
+    }
 
     return operands;
   }
@@ -878,6 +917,33 @@ export class DirectCalculationController extends QuestionController {
     }
 
     return steps;
+  }
+
+  /**
+   * Get year-appropriate maximum payment amount based on item cost
+   * This ensures realistic payment amounts for different year levels
+   * (Same logic as CHANGE_CALCULATION model)
+   */
+  private getYearBasedMaxPayment(itemCost: number): number {
+    // Convert to pence for comparison
+    const costInPence = itemCost * 100;
+
+    if (costInPence <= 50) {
+      // Year 1-2: Items up to 50p, max payment £2
+      return 2; // £2
+    } else if (costInPence <= 100) {
+      // Year 2-3: Items up to £1, max payment £5
+      return 5; // £5
+    } else if (costInPence <= 500) {
+      // Year 3-4: Items up to £5, max payment £10
+      return 10; // £10
+    } else if (costInPence <= 1000) {
+      // Year 4-5: Items up to £10, max payment £20
+      return 20; // £20
+    } else {
+      // Year 5-6: Items up to £20, max payment £50
+      return 50; // £50
+    }
   }
 
   /**

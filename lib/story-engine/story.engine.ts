@@ -19,6 +19,7 @@ import {
   isDivisionOutput
 } from '@/lib/types';
 import { MoneyContextGenerator } from './contexts/money.context';
+import { getArticle } from '@/lib/utils/grammar';
 
 export class StoryEngine {
   generateQuestion(mathOutput: any, context: StoryContext): string {
@@ -81,7 +82,18 @@ export class StoryEngine {
     if (mathOutput.operation === 'MONEY_SCALING') {
       return this.generateMoneyScalingQuestion(mathOutput, context);
     }
-    
+
+    // Additional mathematical models
+    if (mathOutput.operation === 'COUNTING') {
+      return this.generateCountingQuestion(mathOutput, context);
+    }
+    if (mathOutput.operation === 'TIME_RATE') {
+      return this.generateTimeRateQuestion(mathOutput, context);
+    }
+    if (mathOutput.operation === 'CONVERSION') {
+      return this.generateConversionQuestion(mathOutput, context);
+    }
+
     // Geometry models
     if (mathOutput.operation === 'SHAPE_RECOGNITION') {
       return this.generateShapeRecognitionQuestion(mathOutput, context);
@@ -115,9 +127,11 @@ export class StoryEngine {
         itemsToUse.push(items[i % items.length]); // Reuse items if not enough
       }
 
-      const purchases = output.operands.map((value, i) =>
-        `a ${itemsToUse[i]} for ${MoneyContextGenerator.formatMoney(value)}`
-      ).join(', ');
+      const purchases = output.operands.map((value, i) => {
+        const item = itemsToUse[i];
+        const article = getArticle(item);
+        return `${article} ${item} for ${MoneyContextGenerator.formatMoney(value)}`;
+      }).join(', ');
 
       return `${person} goes to the shop and buys ${purchases}. How much does ${person} spend in total?`;
     }
@@ -139,7 +153,8 @@ export class StoryEngine {
     
     if (context.scenario_type === 'change' && context.unit_type === 'currency') {
       const item = context.item_descriptors?.[0] || 'item';
-      return `${person} buys a ${item} for ${MoneyContextGenerator.formatMoney(output.subtrahend)}. ` +
+      const article = getArticle(item);
+      return `${person} buys ${article} ${item} for ${MoneyContextGenerator.formatMoney(output.subtrahend)}. ` +
              `${person} pays with ${MoneyContextGenerator.formatMoney(output.minuend)}. ` +
              `How much change does ${person} receive?`;
     }
@@ -364,9 +379,15 @@ export class StoryEngine {
       } else if (isMultiplicationOutput(mathOutput)) {
         value = mathOutput.result;
       } else if (isDivisionOutput(mathOutput)) {
-        value = mathOutput.quotient;
-        if (mathOutput.remainder > 0) {
-          return `${MoneyContextGenerator.formatMoney(value)} with ${MoneyContextGenerator.formatMoney(mathOutput.remainder)} remaining`;
+        // For currency division, use decimal result if available, otherwise quotient
+        if (mathOutput.result && typeof mathOutput.result === 'number') {
+          value = mathOutput.result;
+        } else {
+          value = mathOutput.quotient;
+          // Only show remainder for non-currency divisions or when result has no decimal equivalent
+          if (mathOutput.remainder > 0 && !mathOutput.result) {
+            return `${MoneyContextGenerator.formatMoney(value)} with ${MoneyContextGenerator.formatMoney(mathOutput.remainder)} remaining`;
+          }
         }
       } else if (mathOutput.operation === 'PERCENTAGE') {
         value = mathOutput.result;
@@ -449,7 +470,21 @@ export class StoryEngine {
       return String(mathOutput.result);
     }
     if (mathOutput.quotient !== undefined) {
+      // For division, prefer decimal result if available, otherwise use quotient + remainder
+      if (mathOutput.result && typeof mathOutput.result === 'number') {
+        return String(mathOutput.result);
+      }
       if (mathOutput.remainder > 0) {
+        // Only show remainder for integer division contexts
+        const dividend = mathOutput.dividend || 0;
+        const divisor = mathOutput.divisor || 1;
+        const expectedDecimal = dividend / divisor;
+
+        // If the expected result is a clean decimal (like currency), show decimal instead of remainder
+        if (Number.isInteger(expectedDecimal * 100)) {
+          return expectedDecimal.toFixed(2);
+        }
+
         return `${mathOutput.quotient} remainder ${mathOutput.remainder}`;
       }
       return String(mathOutput.quotient);
@@ -548,18 +583,50 @@ export class StoryEngine {
 
   private generateChangeCalculationQuestion(output: any, context: StoryContext): string {
     const person = context.person || 'Sarah';
-    
-    if (output.problem_type === 'single_item') {
+
+    // Create fallback payment description if missing
+    const getPaymentDescription = () => {
+      if (output.payment_description && output.payment_description !== 'undefined') {
+        return output.payment_description;
+      }
+
+      // Generate reasonable payment description based on payment amount
+      if (output.payment_amount) {
+        return this.formatPaymentDescription(output.payment_amount);
+      }
+
+      // Last resort: generate from total cost
+      const cost = output.total_cost || output.items?.[0]?.cost || 100;
+      const paymentAmount = Math.ceil(cost / 500) * 500; // Round up to nearest £5
+      return this.formatPaymentDescription(paymentAmount);
+    };
+
+    const paymentDesc = getPaymentDescription();
+
+    if (output.problem_type === 'single_item' || output.problem_type === 'simple_change') {
       const item = output.items[0];
-      return `${person} buys a ${item.name} for ${this.formatCurrency(item.cost)}. ` +
-             `${person} pays with ${output.payment_description}. How much change should ${person} receive?`;
+      const article = getArticle(item.name);
+      return `${person} buys ${article} ${item.name} for ${this.formatCurrency(item.cost)}. ` +
+             `${person} pays with ${paymentDesc}. How much change does ${person} get?`;
     } else if (output.problem_type === 'multiple_items') {
       const itemList = output.items.map((item: any) => `${item.quantity} ${item.name}${item.quantity > 1 ? 's' : ''} for ${this.formatCurrency(item.cost * item.quantity)}`).join(' and ');
       return `${person} buys ${itemList} (total: ${this.formatCurrency(output.total_cost)}). ` +
-             `${person} pays with ${output.payment_description}. How much change should ${person} receive?`;
+             `${person} pays with ${paymentDesc}. How much change does ${person} get?`;
     }
-    
+
     return `${person} needs to calculate change from a purchase.`;
+  }
+
+  private formatPaymentDescription(amount: number): string {
+    if (amount >= 500) {
+      const pounds = Math.floor(amount / 100);
+      return `a £${pounds} note`;
+    } else if (amount >= 100) {
+      const pounds = amount / 100;
+      return `a £${pounds} coin`;
+    } else {
+      return `${amount}p in coins`;
+    }
   }
 
   private generateMoneyCombinationsQuestion(output: any, context: StoryContext): string {
@@ -854,5 +921,88 @@ export class StoryEngine {
     };
     
     return displayNames[property] || property;
+  }
+
+  private generateCountingQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Sam';
+    const targetValue = output.target_value;
+
+    if (context.unit_type === 'currency') {
+      const solutions = output.solutions || [];
+      if (solutions.length > 0) {
+        const itemsDesc = context.item_descriptors?.[0] || 'items';
+        return `${person} needs to count out exactly ${this.formatCurrency(targetValue)} using coins. ` +
+               `Which combination of coins makes this amount?`;
+      }
+      return `${person} needs to count ${this.formatCurrency(targetValue)}. How much is this?`;
+    }
+
+    // Generic counting scenarios
+    const items = context.item_descriptors || ['objects', 'items', 'things'];
+    const itemType = items[0] || 'items';
+
+    return `${person} is counting ${itemType}. If there are ${targetValue} ${itemType} altogether, ` +
+           `how many ${itemType} are there in total?`;
+  }
+
+  private generateTimeRateQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Alex';
+    const rate = output.rate;
+    const timeValue = output.time_value || 1;
+    const period = rate.period || 'hour';
+
+    switch (output.problem_type) {
+      case 'time_to_target':
+        const target = output.target_value;
+        return `${person} can complete ${rate.value} tasks per ${period}. ` +
+               `How long will it take ${person} to complete ${target} tasks?`;
+
+      case 'total_after_time':
+        const duration = output.time_duration || timeValue;
+        const unit = output.unit || 'tasks';
+        return `${person} works at a rate of ${rate.value} ${unit} per ${period}. ` +
+               `How many ${unit} will ${person} complete in ${duration} ${period}s?`;
+
+      case 'rate_calculation':
+        const completed = output.completed_value || rate.value;
+        const timeTaken = output.time_taken || timeValue;
+        const workType = context.item_descriptors?.[0] || 'tasks';
+        return `${person} completed ${completed} ${workType} in ${timeTaken} ${period}s. ` +
+               `What is ${person}'s rate per ${period}?`;
+
+      default:
+        return `${person} is working at a rate of ${rate.value} per ${period}. Calculate the result.`;
+    }
+  }
+
+  private generateConversionQuestion(output: any, context: StoryContext): string {
+    const person = context.person || 'Jordan';
+    const originalValue = output.original_value;
+    const originalUnit = output.original_unit;
+    const convertedUnit = output.converted_unit;
+    const conversionFactor = output.conversion_factor;
+
+    // Create realistic conversion scenarios
+    if (originalUnit.includes('metre') || originalUnit.includes('meter') ||
+        convertedUnit.includes('metre') || convertedUnit.includes('meter')) {
+      return `${person} is measuring lengths in the garden. ${person} has measured ${originalValue} ${originalUnit}. ` +
+             `Convert this measurement to ${convertedUnit}.`;
+    }
+
+    if (originalUnit.includes('gram') || originalUnit.includes('kilogram') ||
+        convertedUnit.includes('gram') || convertedUnit.includes('kilogram')) {
+      return `${person} is weighing ingredients for cooking. The recipe calls for ${originalValue} ${originalUnit}. ` +
+             `Convert this to ${convertedUnit}.`;
+    }
+
+    if (originalUnit.includes('litre') || originalUnit.includes('liter') ||
+        convertedUnit.includes('litre') || convertedUnit.includes('liter')) {
+      return `${person} is measuring liquids. ${person} has ${originalValue} ${originalUnit} of liquid. ` +
+             `How much is this in ${convertedUnit}?`;
+    }
+
+    // Generic conversion
+    return `${person} needs to convert ${originalValue} ${originalUnit} to ${convertedUnit}. ` +
+           `What is the result?`;
   }
 }

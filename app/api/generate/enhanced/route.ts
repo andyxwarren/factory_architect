@@ -12,6 +12,7 @@ import { DistractorEngine } from '@/lib/services/distractor-engine.service';
 import { generateMathQuestion, getModel } from '@/lib/math-engine';
 import { QuestionFormat, ScenarioTheme } from '@/lib/types/question-formats';
 import { IMathModel } from '@/lib/types';
+import { MODEL_STATUS_REGISTRY, ModelStatus } from '@/lib/models/model-status';
 
 /**
  * Enhanced API request validation
@@ -26,6 +27,8 @@ interface ValidatedRequest extends EnhancedQuestionRequest {
 interface ValidationResult {
   valid: boolean;
   error?: string;
+  status?: string;
+  reason?: string;
 }
 
 /**
@@ -95,6 +98,19 @@ export async function POST(req: NextRequest) {
     // Validate request
     const validation = validateRequest(body);
     if (!validation.valid) {
+      // Special handling for broken models (503 Service Unavailable)
+      if (validation.status === 'broken') {
+        return NextResponse.json(
+          {
+            error: validation.error,
+            status: validation.status,
+            reason: validation.reason
+          },
+          { status: 503 }
+        );
+      }
+
+      // Other validation errors (400 Bad Request)
       return NextResponse.json(
         { error: validation.error },
         { status: 400 }
@@ -369,6 +385,17 @@ function validateRequest(body: ValidatedRequest): ValidationResult {
     return {
       valid: false,
       error: `Unsupported model_id: ${body.model_id}. Supported models: ${supportedModels.join(', ')}`
+    };
+  }
+
+  // Check model status - reject broken models
+  const modelStatus = MODEL_STATUS_REGISTRY[body.model_id];
+  if (modelStatus && modelStatus.status === ModelStatus.BROKEN) {
+    return {
+      valid: false,
+      error: `Model ${body.model_id} is currently disabled`,
+      status: 'broken',
+      reason: modelStatus.knownIssues?.join(', ') || 'Model implementation issues'
     };
   }
 

@@ -557,7 +557,7 @@ export class ScenarioService {
       templates: [
         {
           formatCompatibility: [QuestionFormat.DIRECT_CALCULATION],
-          template: '{character} buys a {item} for {price}. How much does it cost?',
+          template: '{character} buys {article} {item} for {price}. How much does it cost?',
           answerTemplate: 'It costs {result}',
           placeholders: [
             { key: 'character', type: 'character' as const },
@@ -929,6 +929,7 @@ export class ScenarioService {
       templates: [
         {
           formatCompatibility: [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.COMPARISON],
+          modelCompatibility: ['ADDITION', 'COUNTING'], // Only allow specific models
           template: '{character} wants to buy books at the book fair. Calculate the total cost.',
           answerTemplate: 'The total cost is {result}',
           placeholders: [
@@ -941,8 +942,130 @@ export class ScenarioService {
 
     this.scenarios.set(bookFairScenario.id, bookFairScenario);
 
+    // Add MULTI_STEP specific scenario
+    this.addMultiStepScenario();
+
+    // Add LINEAR_EQUATION specific scenario
+    this.addLinearEquationScenario();
+
     // Add realistic general shopping scenario
     this.addRealisticShoppingScenario();
+  }
+
+  /**
+   * Add MULTI_STEP specific scenario
+   */
+  private addMultiStepScenario(): void {
+    const multiStepScenario: ScenarioContext = {
+      id: 'multi-step-001',
+      theme: ScenarioTheme.REAL_WORLD,
+      setting: {
+        location: 'classroom',
+        timeContext: 'math lesson',
+        atmosphere: 'focused'
+      },
+      characters: [
+        { name: 'Alex', role: 'student' },
+        { name: 'Ms. Johnson', role: 'teacher' }
+      ],
+      items: [
+        {
+          name: 'notebook',
+          category: ItemCategory.SCHOOL_SUPPLIES,
+          typicalValue: {
+            min: 1.50,
+            max: 4.00,
+            typical: 2.50,
+            distribution: 'normal' as const
+          },
+          unit: '£',
+          attributes: {
+            quality: 'standard' as const
+          }
+        }
+      ],
+      culturalElements: [
+        { type: 'currency', value: '£', explanation: 'British pounds' },
+        { type: 'location', value: 'classroom', explanation: 'UK classroom setting' }
+      ],
+      realWorldConnection: 'Sequential problem solving and logical reasoning',
+      yearAppropriate: [4, 5, 6],
+      templates: [
+        {
+          formatCompatibility: [QuestionFormat.MULTI_STEP, QuestionFormat.DIRECT_CALCULATION],
+          modelCompatibility: ['MULTI_STEP'],
+          template: '{character} is solving a step-by-step problem. First calculate {step1}, then {step2}. What is the final answer?',
+          answerTemplate: 'The final answer is {result}',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'step1', type: 'value' },
+            { key: 'step2', type: 'value' },
+            { key: 'result', type: 'value' }
+          ]
+        }
+      ]
+    };
+
+    this.scenarios.set(multiStepScenario.id, multiStepScenario);
+  }
+
+  /**
+   * Add LINEAR_EQUATION specific scenario
+   */
+  private addLinearEquationScenario(): void {
+    const linearEquationScenario: ScenarioContext = {
+      id: 'linear-equation-001',
+      theme: ScenarioTheme.PUZZLE,
+      setting: {
+        location: 'classroom',
+        timeContext: 'algebra lesson',
+        atmosphere: 'challenging'
+      },
+      characters: [
+        { name: 'Jordan', role: 'student' },
+        { name: 'Mr. Ahmed', role: 'math teacher' }
+      ],
+      items: [
+        {
+          name: 'pattern block',
+          category: ItemCategory.EDUCATIONAL_ITEMS,
+          typicalValue: {
+            min: 1,
+            max: 20,
+            typical: 10,
+            distribution: 'normal' as const
+          },
+          unit: '',
+          attributes: {
+            quality: 'standard' as const
+          }
+        }
+      ],
+      culturalElements: [
+        { type: 'location', value: 'UK classroom', explanation: 'British school setting' }
+      ],
+      realWorldConnection: 'Pattern recognition and algebraic thinking',
+      yearAppropriate: [5, 6],
+      templates: [
+        {
+          formatCompatibility: [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.MISSING_VALUE],
+          modelCompatibility: ['LINEAR_EQUATION'],
+          template: '{character} discovers a number pattern: when input is {input1}, output is {output1}. When input is {input2}, output is {output2}. What is the output when input is {targetInput}?',
+          answerTemplate: 'The output is {result}',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'input1', type: 'value' },
+            { key: 'output1', type: 'value' },
+            { key: 'input2', type: 'value' },
+            { key: 'output2', type: 'value' },
+            { key: 'targetInput', type: 'value' },
+            { key: 'result', type: 'value' }
+          ]
+        }
+      ]
+    };
+
+    this.scenarios.set(linearEquationScenario.id, linearEquationScenario);
   }
 
   /**
@@ -1021,7 +1144,7 @@ export class ScenarioService {
           formatCompatibility: [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.MULTI_STEP],
           modelCompatibility: ['ADDITION'],
           operandCount: 3,
-          template: '{character} buys a {item1} for {price1}, a {item2} for {price2}, and a {item3} for {price3}. What is the total cost?',
+          template: '{character} buys {article1} {item1} for {price1}, {article2} {item2} for {price2}, and {article3} {item3} for {price3}. What is the total cost?',
           answerTemplate: 'The total cost is {result}',
           placeholders: [
             { key: 'character', type: 'character' },
@@ -1039,7 +1162,7 @@ export class ScenarioService {
           formatCompatibility: [QuestionFormat.DIRECT_CALCULATION, QuestionFormat.MULTI_STEP],
           modelCompatibility: ['ADDITION'],
           operandCount: 2,
-          template: '{character} buys a {item1} for {price1} and a {item2} for {price2}. What is the total cost?',
+          template: '{character} buys {article1} {item1} for {price1} and {article2} {item2} for {price2}. What is the total cost?',
           answerTemplate: 'The total cost is {result}',
           placeholders: [
             { key: 'character', type: 'character' },
@@ -1054,7 +1177,7 @@ export class ScenarioService {
         {
           formatCompatibility: [QuestionFormat.DIRECT_CALCULATION],
           modelCompatibility: ['SUBTRACTION', 'CHANGE_CALCULATION'],
-          template: '{character} buys a {item} for {price} and pays with {payment}. How much change does {character} get?',
+          template: '{character} buys {article} {item} for {price} and pays with {payment}. How much change does {character} get?',
           answerTemplate: '{character} receives {result} in change',
           placeholders: [
             { key: 'character', type: 'character' },
@@ -1396,5 +1519,98 @@ export class ScenarioService {
         this.modelThemeCompatibility.set(model, defaultThemes);
       }
     });
+  }
+
+  /**
+   * Add MULTI_STEP specific scenario
+   */
+  private addMultiStepScenario(): void {
+    const multiStepScenario: ScenarioContext = {
+      id: 'multi-step-001',
+      theme: ScenarioTheme.REAL_WORLD,
+      setting: {
+        location: 'classroom',
+        timeContext: 'during lesson',
+        atmosphere: 'focused'
+      },
+      characters: [
+        { name: 'Alex', role: 'student' },
+        { name: 'Ms. Thompson', role: 'teacher' }
+      ],
+      items: [],
+      culturalElements: [
+        { type: 'setting', value: 'UK classroom', explanation: 'British school environment' }
+      ],
+      realWorldConnection: 'Multi-step problem solving in education',
+      yearAppropriate: [4, 5, 6],
+      templates: [
+        {
+          formatCompatibility: ['DIRECT_CALCULATION', 'MULTI_STEP'],
+          modelCompatibility: ['MULTI_STEP'],
+          template: '{character} solves a problem in steps. First, {character} calculates {step_1_result}. Then, {character} calculates {step_2_result}. Finally, {character} gets {step_3_result}. What is the final answer?',
+          answerTemplate: 'The final answer is {step_3_result}',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'step_1_result', type: 'value' },
+            { key: 'step_2_result', type: 'value' },
+            { key: 'step_3_result', type: 'value' }
+          ]
+        },
+        {
+          formatCompatibility: ['DIRECT_CALCULATION'],
+          modelCompatibility: ['MULTI_STEP'],
+          template: '{character} works through a calculation step by step. After completing all the steps, what is the final result?',
+          answerTemplate: 'The final result is {step_3_result}',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'step_3_result', type: 'value' }
+          ]
+        }
+      ]
+    };
+
+    this.scenarios.set(multiStepScenario.id, multiStepScenario);
+  }
+
+  /**
+   * Add LINEAR_EQUATION specific scenario
+   */
+  private addLinearEquationScenario(): void {
+    const linearEquationScenario: ScenarioContext = {
+      id: 'linear-equation-001',
+      theme: ScenarioTheme.SCHOOL,
+      setting: {
+        location: 'mathematics classroom',
+        timeContext: 'algebra lesson',
+        atmosphere: 'academic'
+      },
+      characters: [
+        { name: 'Jordan', role: 'student' },
+        { name: 'Mr. Chen', role: 'teacher' }
+      ],
+      items: [],
+      culturalElements: [
+        { type: 'academic', value: 'algebra', explanation: 'Mathematical thinking' }
+      ],
+      realWorldConnection: 'Linear relationships in mathematics',
+      yearAppropriate: [5, 6],
+      templates: [
+        {
+          formatCompatibility: ['DIRECT_CALCULATION'],
+          modelCompatibility: ['LINEAR_EQUATION'],
+          template: '{character} works with the linear equation y = {slope}x + {intercept}. What is the value when x = {input}?',
+          answerTemplate: 'The value is {result}',
+          placeholders: [
+            { key: 'character', type: 'character' },
+            { key: 'slope', type: 'value' },
+            { key: 'intercept', type: 'value' },
+            { key: 'input', type: 'value' },
+            { key: 'result', type: 'value' }
+          ]
+        }
+      ]
+    };
+
+    this.scenarios.set(linearEquationScenario.id, linearEquationScenario);
   }
 }

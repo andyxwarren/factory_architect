@@ -6,6 +6,7 @@ import { GenerateRequest, GeneratedQuestion } from '@/lib/types';
 import { EnhancedDifficultySystem } from '@/lib/math-engine/difficulty-enhanced';
 import { ProgressionTracker } from '@/lib/math-engine/progression-tracker';
 import { SubDifficultyLevel, DifficultyProgression } from '@/lib/types-enhanced';
+import { MODEL_STATUS_REGISTRY, ModelStatus } from '@/lib/models/model-status';
 
 // Import enhanced system for redirect
 import {
@@ -72,6 +73,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: `Invalid model_id: ${model_id}` },
         { status: 400 }
+      );
+    }
+
+    // Check model status - reject broken models
+    const modelStatus = MODEL_STATUS_REGISTRY[model_id];
+    if (modelStatus && modelStatus.status === ModelStatus.BROKEN) {
+      return NextResponse.json(
+        {
+          error: `Model ${model_id} is currently disabled`,
+          status: 'broken',
+          reason: modelStatus.knownIssues?.join(', ') || 'Model implementation issues'
+        },
+        { status: 503 } // Service Unavailable
       );
     }
 

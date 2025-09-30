@@ -802,4 +802,167 @@ export class MissingValueController extends QuestionController {
 
     return missingValueParams.missingValue + 2; // Fallback
   }
+
+  /**
+   * Determine missing value parameters from math output
+   */
+  private determineMissingValueParams(mathModel: string, mathOutput: any, difficulty: any): MissingValueParams {
+    // Extract operands and result from math output based on model type
+    let providedValues: number[] = [];
+    let missingValue: number;
+    let missingPosition: 'operand1' | 'operand2' | 'operand3' | 'result' | 'operator';
+
+    // Handle different math model output structures
+    switch (mathModel) {
+      case 'ADDITION':
+      case 'SUBTRACTION':
+      case 'MULTIPLICATION':
+      case 'DIVISION':
+        // These models have operands array or individual operand fields
+        if (mathOutput.operands && Array.isArray(mathOutput.operands)) {
+          providedValues = mathOutput.operands;
+          missingValue = mathOutput.result;
+          missingPosition = 'result';
+        } else if (mathOutput.operand_1 !== undefined && mathOutput.operand_2 !== undefined) {
+          // Traditional operand_1, operand_2 structure
+          providedValues = [mathOutput.operand_1, mathOutput.operand_2];
+          missingValue = mathOutput.result;
+          missingPosition = 'result';
+        } else {
+          // Fallback: try to extract from any numeric properties
+          const numericValues = this.extractNumericValues(mathOutput);
+          if (numericValues.length >= 2) {
+            providedValues = numericValues.slice(0, -1); // All but last
+            missingValue = numericValues[numericValues.length - 1]; // Last as missing
+            missingPosition = 'result';
+          } else {
+            console.warn(`Could not extract operands from ${mathModel} output:`, mathOutput);
+            providedValues = [0, 0];
+            missingValue = 0;
+            missingPosition = 'result';
+          }
+        }
+        break;
+
+      case 'FRACTION':
+        // Fraction has numerator, denominator, result
+        if (mathOutput.numerator !== undefined && mathOutput.denominator !== undefined) {
+          providedValues = [mathOutput.numerator, mathOutput.denominator];
+          missingValue = mathOutput.result || (mathOutput.numerator / mathOutput.denominator);
+          missingPosition = 'result';
+        } else {
+          providedValues = [1, 2];
+          missingValue = 0.5;
+          missingPosition = 'result';
+        }
+        break;
+
+      case 'PERCENTAGE':
+        // Percentage has amount, percentage, result
+        if (mathOutput.amount !== undefined && mathOutput.percentage !== undefined) {
+          providedValues = [mathOutput.amount, mathOutput.percentage];
+          missingValue = mathOutput.result;
+          missingPosition = 'result';
+        } else {
+          providedValues = [100, 50];
+          missingValue = 50;
+          missingPosition = 'result';
+        }
+        break;
+
+      default:
+        // Generic approach: extract all numeric values
+        const allValues = this.extractNumericValues(mathOutput);
+        if (allValues.length >= 2) {
+          providedValues = allValues.slice(0, -1);
+          missingValue = allValues[allValues.length - 1];
+          missingPosition = 'result';
+        } else {
+          console.warn(`Unsupported math model for missing value: ${mathModel}`);
+          providedValues = [5, 3];
+          missingValue = 8;
+          missingPosition = 'result';
+        }
+    }
+
+    // Determine equation type based on difficulty and model
+    let equationType: 'simple' | 'balanced' | 'function' | 'word_equation' = 'simple';
+    if (difficulty.year >= 5) {
+      equationType = Math.random() > 0.7 ? 'balanced' : 'simple';
+    }
+    if (difficulty.year <= 2) {
+      equationType = 'word_equation';
+    }
+
+    return {
+      missingPosition,
+      equationType,
+      showUnits: false,
+      algebraicForm: difficulty.year >= 5,
+      providedValues,
+      missingValue
+    };
+  }
+
+  /**
+   * Extract all numeric values from math output for generic handling
+   */
+  private extractNumericValues(mathOutput: any): number[] {
+    const values: number[] = [];
+
+    for (const [key, value] of Object.entries(mathOutput)) {
+      if (typeof value === 'number' && !isNaN(value)) {
+        values.push(value);
+      }
+    }
+
+    return values;
+  }
+
+  /**
+   * Build equation with missing value placeholder
+   */
+  private buildEquation(mathOutput: any, missingValueParams: MissingValueParams): any {
+    const operator = this.getOperatorSymbol(mathOutput.operation);
+    const providedValues = missingValueParams.providedValues;
+    const missingPosition = missingValueParams.missingPosition;
+
+    // Build equation based on missing position
+    switch (missingPosition) {
+      case 'operand1':
+        return {
+          left: '?',
+          operator,
+          right: providedValues[1] || providedValues[0],
+          result: missingValueParams.missingValue
+        };
+
+      case 'operand2':
+        return {
+          left: providedValues[0],
+          operator,
+          right: '?',
+          result: missingValueParams.missingValue
+        };
+
+      case 'result':
+      default:
+        // Most common case: missing result
+        if (providedValues.length >= 2) {
+          return {
+            left: providedValues[0],
+            operator,
+            right: providedValues[1],
+            result: '?'
+          };
+        } else {
+          return {
+            left: providedValues[0] || 5,
+            operator,
+            right: providedValues[1] || 3,
+            result: '?'
+          };
+        }
+    }
+  }
 }

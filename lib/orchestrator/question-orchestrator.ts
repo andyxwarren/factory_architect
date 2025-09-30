@@ -999,7 +999,15 @@ export class QuestionRenderer {
     }
 
     // Priority 3: Fallback to basic rendering
-    return this.generateBasicQuestion(definition);
+    // When falling back to basic questions, ensure theme alignment
+    const basicQuestion = this.generateBasicQuestion(definition);
+
+    // Update scenario theme to reflect that this is a pure math question
+    if (definition.scenario) {
+      definition.scenario.theme = ScenarioTheme.SCHOOL; // Most appropriate for pure math questions
+    }
+
+    return basicQuestion;
   }
 
   private fillTemplate(template: string, definition: QuestionDefinition): string {
@@ -1032,7 +1040,17 @@ export class QuestionRenderer {
       const isMoney = definition.scenario.theme === 'SHOPPING' ||
                      definition.mathModel.includes('MONEY');
       if (mathValues.result !== undefined) {
-        replacements['result'] = isMoney ? this.formatPrice(mathValues.result) : String(mathValues.result);
+        // Ensure result is a number before formatting
+        const resultValue = typeof mathValues.result === 'number' ? mathValues.result :
+                           typeof mathValues.result === 'object' && mathValues.result?.total_decimal ? mathValues.result.total_decimal :
+                           parseFloat(String(mathValues.result));
+
+        if (!isNaN(resultValue)) {
+          replacements['result'] = isMoney ? this.formatPrice(resultValue) : String(resultValue);
+        } else {
+          console.warn(`Invalid result value for ${definition.mathModel}:`, mathValues.result);
+          replacements['result'] = '0';
+        }
       }
     }
 
@@ -1178,10 +1196,22 @@ export class QuestionRenderer {
    * Format a number as a UK price
    */
   private formatPrice(amount: number): string {
-    if (amount < 1) {
-      return `${Math.round(amount * 100)}p`;
+    // Ensure amount is a number
+    const numAmount = typeof amount === 'number' ? amount : parseFloat(String(amount));
+    if (isNaN(numAmount)) {
+      console.warn(`Invalid amount passed to formatPrice:`, amount);
+      return '£0.00';
     }
-    return `£${amount.toFixed(2)}`;
+
+    // Proper rounding to 2 decimal places to avoid floating point precision issues
+    const rounded = Math.round((numAmount + Number.EPSILON) * 100) / 100;
+
+    if (rounded < 1) {
+      const pence = Math.round(rounded * 100);
+      return `${pence}p`;
+    }
+
+    return `£${rounded.toFixed(2)}`;
   }
 
   private generateBasicQuestion(definition: QuestionDefinition): string {
@@ -1259,25 +1289,43 @@ export class QuestionRenderer {
    * Format values according to context (from base controller)
    */
   private formatValue(value: number, units?: string, decimalPlaces: number = 2): string {
+    // Ensure value is a number
+    const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+    if (isNaN(numValue)) {
+      console.warn(`Invalid value passed to formatValue:`, value);
+      return '0';
+    }
+
     if (units === '£' || units === 'pounds') {
-      return this.formatCurrency(value);
+      return this.formatCurrency(numValue);
     }
 
-    if (Number.isInteger(value)) {
-      return value.toString();
+    if (Number.isInteger(numValue)) {
+      return numValue.toString();
     }
 
-    return value.toFixed(decimalPlaces);
+    return numValue.toFixed(decimalPlaces);
   }
 
   /**
    * Format currency values (from base controller)
    */
   private formatCurrency(value: number): string {
-    if (value >= 1) {
-      return `£${value.toFixed(2)}`;
+    // Ensure value is a number
+    const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+    if (isNaN(numValue)) {
+      console.warn(`Invalid value passed to formatCurrency:`, value);
+      return '£0.00';
+    }
+
+    // Proper rounding to 2 decimal places to avoid floating point precision issues
+    const rounded = Math.round((numValue + Number.EPSILON) * 100) / 100;
+
+    if (rounded >= 1) {
+      return `£${rounded.toFixed(2)}`;
     } else {
-      return `${Math.round(value * 100)}p`;
+      const pence = Math.round(rounded * 100);
+      return `${pence}p`;
     }
   }
 

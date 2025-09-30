@@ -168,31 +168,103 @@ export class ChangeCalculationModel implements IMathModel<ChangeCalculationDiffi
   private generateItemCost(params: ChangeCalculationDifficultyParams, multiplier: number = 1): number {
     const maxCost = Math.floor(params.max_item_cost * multiplier);
     let cost = generateRandomNumber(maxCost, params.decimal_places, 5); // Minimum 5p
-    
+
     // Round to appropriate increment based on decimal places
     if (params.decimal_places === 0) {
       cost = Math.round(cost / 5) * 5; // Round to nearest 5p
     } else {
       cost = Math.round(cost * 100) / 100; // Round to nearest penny
     }
-    
+
     return cost;
   }
 
+  /**
+   * Get year-appropriate maximum payment amount based on difficulty
+   * This ensures realistic payment amounts for different year levels
+   */
+  private getYearBasedMaxPayment(maxItemCost: number): number {
+    // Infer year level from max_item_cost parameter
+    if (maxItemCost <= 50) {
+      // Year 1-2: Items up to 50p, max payment £2
+      return 200; // £2
+    } else if (maxItemCost <= 100) {
+      // Year 2-3: Items up to £1, max payment £5
+      return 500; // £5
+    } else if (maxItemCost <= 500) {
+      // Year 3-4: Items up to £5, max payment £10
+      return 1000; // £10
+    } else if (maxItemCost <= 1000) {
+      // Year 4-5: Items up to £10, max payment £20
+      return 2000; // £20
+    } else {
+      // Year 5-6: Items up to £20, max payment £50
+      return 5000; // £50
+    }
+  }
+
   private selectPaymentAmount(
-    params: ChangeCalculationDifficultyParams, 
-    itemCost: number, 
+    params: ChangeCalculationDifficultyParams,
+    itemCost: number,
     forceChange: boolean = false
   ): number {
-    const availablePayments = params.payment_methods.filter(p => p > itemCost);
-    
-    if (availablePayments.length === 0 || (!forceChange && Math.random() < 0.2)) {
-      // Sometimes allow exact payment or use next denomination up
-      const nextUp = ChangeCalculationModel.COMMON_PAYMENTS.find(p => p > itemCost);
-      return nextUp || itemCost * 1.5;
+    // Filter payments to be realistic (not more than 5x the item cost for realism)
+    // Also apply year-based maximum caps for age-appropriateness
+    const yearBasedMax = this.getYearBasedMaxPayment(params.max_item_cost);
+    const maxReasonablePayment = Math.min(itemCost * 5, yearBasedMax);
+    const availablePayments = params.payment_methods
+      .filter(p => p > itemCost && p <= maxReasonablePayment);
+
+    // If no reasonable payments available, generate one
+    if (availablePayments.length === 0) {
+      // Find the next reasonable denomination within the cap
+      const reasonableNext = ChangeCalculationModel.COMMON_PAYMENTS
+        .find(p => p > itemCost && p <= maxReasonablePayment);
+
+      if (reasonableNext) {
+        return reasonableNext;
+      }
+
+      // Generate a sensible payment (round up to sensible denomination)
+      // Ensure we don't exceed the year-based maximum
+      let generatedPayment: number;
+
+      if (itemCost <= 50) { // Up to 50p
+        generatedPayment = Math.ceil(itemCost / 50) * 50; // Round up to next 50p
+      } else if (itemCost <= 100) { // Up to £1
+        generatedPayment = Math.ceil(itemCost / 100) * 100; // Round up to next £1
+      } else if (itemCost <= 500) { // Up to £5
+        generatedPayment = 500; // £5
+      } else if (itemCost <= 1000) { // Up to £10
+        generatedPayment = 1000; // £10
+      } else {
+        generatedPayment = Math.ceil(itemCost / 500) * 500; // Round up to next £5
+      }
+
+      // Ensure generated payment doesn't exceed the cap
+      return Math.min(generatedPayment, maxReasonablePayment);
     }
-    
-    return randomChoice(availablePayments);
+
+    if (!forceChange && Math.random() < 0.2) {
+      // Sometimes allow exact payment
+      return itemCost;
+    }
+
+    // Prefer smaller, more realistic payments
+    const sortedPayments = availablePayments.sort((a, b) => {
+      const ratioA = a / itemCost;
+      const ratioB = b / itemCost;
+
+      // Prefer payments that are 1.5x to 3x the item cost
+      const idealRatioA = Math.abs(ratioA - 2);
+      const idealRatioB = Math.abs(ratioB - 2);
+
+      return idealRatioA - idealRatioB;
+    });
+
+    // Choose from the best 3 options
+    const bestOptions = sortedPayments.slice(0, 3);
+    return randomChoice(bestOptions);
   }
 
   private calculateOptimalChange(changeAmount: number): Array<{ denomination: number; count: number; formatted: string }> {

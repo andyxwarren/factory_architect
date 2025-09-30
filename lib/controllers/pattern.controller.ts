@@ -95,8 +95,14 @@ export class PatternController extends QuestionController {
     // Create question text with scenario
     const questionText = this.generatePatternQuestionText(scenario, questionSequence, patternParams);
 
+    // Validate missing values before generating distractors
+    const validMissingValues = this.validateMissingValues(missingValues);
+    if (validMissingValues.length === 0) {
+      throw new Error('Pattern generation failed - no valid missing values found');
+    }
+
     // Generate distractors
-    const distractors = await this.generatePatternDistractors(missingValues, patternParams, fullSequence);
+    const distractors = await this.generatePatternDistractors(validMissingValues, patternParams, fullSequence);
 
     return {
       ...baseDefinition,
@@ -107,7 +113,7 @@ export class PatternController extends QuestionController {
           sequence: fullSequence
         },
         questionSequence,
-        missingValues
+        missingValues: validMissingValues
       },
       questionContent: {
         fullText: questionText,
@@ -115,13 +121,13 @@ export class PatternController extends QuestionController {
       },
       solution: {
         correctAnswer: {
-          value: missingValues.length === 1 ? missingValues[0] : missingValues,
-          displayText: missingValues.length === 1 ? missingValues[0].toString() : missingValues.join(', '),
+          value: validMissingValues.length === 1 ? validMissingValues[0] : validMissingValues,
+          displayText: this.formatMissingValuesDisplay(validMissingValues),
           units: ''
         },
         distractors,
         workingSteps: this.generatePatternSteps(fullSequence, patternParams),
-        explanation: this.generatePatternExplanation(patternParams, missingValues),
+        explanation: this.generatePatternExplanation(patternParams, validMissingValues),
         solutionStrategy: 'Identify the pattern rule and apply it to find missing values'
       }
     } as QuestionDefinition;
@@ -559,5 +565,46 @@ export class PatternController extends QuestionController {
     }
 
     return wrongBase * Math.pow(patternParams.ratio || 2, position);
+  }
+
+  /**
+   * Validate missing values to ensure they're valid numbers
+   */
+  private validateMissingValues(missingValues: number[]): number[] {
+    return missingValues.filter(value =>
+      value != null &&
+      !isNaN(value) &&
+      isFinite(value) &&
+      typeof value === 'number'
+    );
+  }
+
+  /**
+   * Format missing values for display, handling null/NaN cases
+   */
+  private formatMissingValuesDisplay(missingValues: number[]): string {
+    if (missingValues.length === 0) {
+      return '0';
+    }
+
+    if (missingValues.length === 1) {
+      const value = missingValues[0];
+      // Ensure proper number formatting
+      if (Number.isInteger(value)) {
+        return value.toString();
+      } else {
+        // Round to 2 decimal places for non-integers
+        return Number(value.toFixed(2)).toString();
+      }
+    }
+
+    // Multiple values
+    return missingValues.map(value => {
+      if (Number.isInteger(value)) {
+        return value.toString();
+      } else {
+        return Number(value.toFixed(2)).toString();
+      }
+    }).join(', ');
   }
 }
