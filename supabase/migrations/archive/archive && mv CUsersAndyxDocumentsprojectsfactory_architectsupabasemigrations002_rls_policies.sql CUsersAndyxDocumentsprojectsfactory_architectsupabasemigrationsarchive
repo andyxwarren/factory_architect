@@ -1,0 +1,321 @@
+-- ============================================
+-- Factory Architect - Initial Database Schema
+-- Migration: 001_initial_schema.sql
+-- Created: 2025-10-01
+-- Description: Core tables for CMS architecture
+-- ============================================
+
+-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
+-- ============================================
+-- CONFIGURATION LAYER
+-- ============================================
+
+-- 1. Difficulty Parameters Table
+-- Stores all 600+ difficulty configurations (previously in difficulty-enhanced.ts)
+CREATE TABLE difficulty_parameters (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  model_id TEXT NOT NULL,
+  difficulty_level TEXT NOT NULL,  -- Format: "3.2" (year.sublevel)
+  year_level INTEGER NOT NULL CHECK (year_level BETWEEN 1 AND 6),
+  sub_level INTEGER NOT NULL CHECK (sub_level BETWEEN 1 AND 4),
+  parameters JSONB NOT NULL,       -- Model-specific difficulty params
+
+  -- Metadata
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+
+  -- Constraints
+  UNIQUE(model_id, difficulty_level),
+  CHECK (difficulty_level ~ '^\d+\.\d+$')  -- Regex: Must match "X.Y" format
+);
+
+-- Indexes for difficulty_parameters
+CREATE INDEX idx_diff_params_model ON difficulty_parameters(model_id);
+CREATE INDEX idx_diff_params_year ON difficulty_parameters(year_level);
+CREATE INDEX idx_diff_params_level ON difficulty_parameters(difficulty_level);
+CREATE INDEX idx_diff_params_gin ON difficulty_parameters USING GIN(parameters);
+
+-- Index on specific JSONB paths (frequently queried params)
+CREATE INDEX idx_diff_params_max_value ON difficulty_parameters ((parameters->>'max_value'));
+CREATE INDEX idx_diff_params_operands ON difficulty_parameters ((parameters->>'operands'));
+
+-- Add comment
+COMMENT ON TABLE difficulty_parameters IS 'Stores difficulty progression parameters for all mathematical models';
+
+
+-- 2. Characters Table
+-- Character names for story scenarios (previously hardcoded in scenario.service.ts)
+CREATE TABLE characters (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL UNIQUE,
+  gender TEXT CHECK(gender IN ('neutral', 'male', 'female')),
+  cultural_context TEXT DEFAULT 'UK',
+  active BOOLEAN DEFAULT TRUE,
+
+  -- Metadata
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+-- Index
+CREATE INDEX idx_characters_active ON characters(active) WHERE active = TRUE;
+
+COMMENT ON TABLE characters IS 'Character names used in story-based math questions';
+
+
+-- 3. Items Table
+-- Items with realistic UK pricing (previously hardcoded in scenario.service.ts)
+CREATE TABLE items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL UNIQUE,
+  category TEXT NOT NULL,          -- 'food', 'stationery', 'sports', etc.
+  pricing JSONB NOT NULL,           -- {min, max, typical, unit}
+  themes TEXT[] DEFAULT '{}',       -- Associated themes: ['SHOPPING', 'COOKING']
+  active BOOLEAN DEFAULT TRUE,
+
+  -- Metadata
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+
+  -- Constraints
+  CHECK (pricing ? 'min' AND pricing ? 'max' AND pricing ? 'typical')
+);
+
+-- Indexes
+CREATE INDEX idx_items_category ON items(category);
+CREATE INDEX idx_items_themes ON items USING GIN(themes);
+CREATE INDEX idx_items_active ON items(active) WHERE active = TRUE;
+
+COMMENT ON TABLE items IS 'Physical items with pricing data for question scenarios';
+
+
+-- 4. Scenario Templates Table
+-- Story templates for question generation
+CREATE TABLE scenario_templates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  theme TEXT NOT NULL,              -- 'SHOPPING', 'SCHOOL', 'SPORTS', etc.
+  format TEXT NOT NULL,             -- 'DIRECT_CALCULATION', 'COMPARISON', etc.
+  template_text TEXT NOT NULL,      -- "{{character}} goes to the shop..."
+  template_data JSONB,              -- Structured data for rendering
+  active BOOLEAN DEFAULT TRUE,
+
+  -- Metadata
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+-- Indexes
+CREATE INDEX idx_templates_theme_format ON scenario_templates(theme, format);
+CREATE INDEX idx_templates_active ON scenario_templates(active) WHERE active = TRUE;
+
+COMMENT ON TABLE scenario_templates IS 'Story templates for generating contextual math questions';
+
+
+-- ============================================
+-- CURATION LAYER
+-- ============================================
+
+-- 5. Curated Mappings Table
+-- Educator-curated Model → Difficulty → Format → Theme combinations
+CREATE TABLE curated_mappings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  model_id TEXT NOT NULL,
+  difficulty_param_id UUID REFERENCES difficulty_parameters(id) ON DELETE CASCADE,
+  format TEXT NOT NULL,             -- Question format (DIRECT_CALCULATION, etc.)
+  theme TEXT NOT NULL,              -- Scenario theme (SHOPPING, etc.)
+  weight REAL DEFAULT 1.0 CHECK (weight >= 0 AND weight <= 10),  -- For weighted random selection
+  active BOOLEAN DEFAULT TRUE,
+
+  -- Metadata
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+
+  -- Constraints: Prevent duplicate mappings
+  UNIQUE(model_id, difficulty_param_id, format, theme)
+);
+
+-- Indexes
+CREATE INDEX idx_mappings_model ON curated_mappings(model_id);
+CREATE INDEX idx_mappings_difficulty ON curated_mappings(difficulty_param_id);
+CREATE INDEX idx_mappings_format ON curated_mappings(format);
+CREATE INDEX idx_mappings_theme ON curated_mappings(theme);
+CREATE INDEX idx_mappings_active ON curated_mappings(active) WHERE active = TRUE;
+
+COMMENT ON TABLE curated_mappings IS 'Curated combinations of models, difficulty levels, formats, and themes';
+
+
+-- ============================================
+-- CONTENT LAYER
+-- ============================================
+
+-- 6. Generated Questions Table
+-- Final output - approved questions ready for student delivery
+CREATE TABLE generated_questions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+  -- Student-facing content
+  question_text TEXT NOT NULL,
+  options JSONB NOT NULL,           -- [{text, value, index}]
+  correct_index INTEGER NOT NULL CHECK (correct_index >= 0),
+  explanation TEXT,
+
+  -- Queryable metadata (foreign keys for efficient filtering)
+  curated_mapping_id UUID REFERENCES curated_mappings(id) ON DELETE SET NULL,
+  difficulty_param_id UUID REFERENCES difficulty_parameters(id) ON DELETE SET NULL,
+  model_id TEXT NOT NULL,
+  format TEXT NOT NULL,
+  theme TEXT NOT NULL,
+
+  -- Generation snapshot (audit trail)
+  generation_params JSONB,          -- Full snapshot of params used at generation time
+  math_output JSONB,                -- Raw mathematical output from Math Engine
+
+  -- Workflow state
+  approved BOOLEAN DEFAULT FALSE,
+  approved_at TIMESTAMPTZ,
+  approved_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  rejection_reason TEXT,            -- If rejected, why?
+
+  -- Educational metadata
+  cognitive_load INTEGER CHECK (cognitive_load BETWEEN 0 AND 100),
+  distractor_strategies TEXT[],     -- Strategies used for wrong answers
+
+  -- Performance tracking
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  generation_time_ms INTEGER,
+
+  -- Constraints
+  CHECK (approved = FALSE OR (approved = TRUE AND approved_at IS NOT NULL AND approved_by IS NOT NULL))
+);
+
+-- Indexes for generated_questions
+CREATE INDEX idx_questions_approved ON generated_questions(approved) WHERE approved = TRUE;
+CREATE INDEX idx_questions_model ON generated_questions(model_id);
+CREATE INDEX idx_questions_format ON generated_questions(format);
+CREATE INDEX idx_questions_theme ON generated_questions(theme);
+CREATE INDEX idx_questions_mapping ON generated_questions(curated_mapping_id);
+CREATE INDEX idx_questions_difficulty ON generated_questions(difficulty_param_id);
+CREATE INDEX idx_questions_created ON generated_questions(created_at DESC);
+
+-- Full-text search on question text (for admin search functionality)
+CREATE INDEX idx_questions_fulltext ON generated_questions USING GIN(to_tsvector('english', question_text));
+
+-- Partial index for unapproved questions (approval queue)
+CREATE INDEX idx_questions_unapproved ON generated_questions(created_at DESC) WHERE approved = FALSE;
+
+COMMENT ON TABLE generated_questions IS 'Final generated questions with approval workflow';
+
+
+-- ============================================
+-- TRIGGERS FOR AUTO-UPDATE TIMESTAMPS
+-- ============================================
+
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Apply trigger to tables with updated_at
+CREATE TRIGGER update_difficulty_parameters_updated_at BEFORE UPDATE ON difficulty_parameters
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_items_updated_at BEFORE UPDATE ON items
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_scenario_templates_updated_at BEFORE UPDATE ON scenario_templates
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_curated_mappings_updated_at BEFORE UPDATE ON curated_mappings
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+
+-- ============================================
+-- GRANT PERMISSIONS (Supabase defaults)
+-- ============================================
+
+-- Grant usage on schema
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+
+-- Grant select on all tables to anon (will be restricted by RLS)
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
+
+-- Grant all on tables to authenticated users (restricted by RLS)
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+
+-- Grant sequence permissions (for auto-incrementing IDs if needed)
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+
+
+-- ============================================
+-- INITIAL DATA VALIDATION VIEWS
+-- ============================================
+
+-- View: Summary of difficulty parameters by model
+CREATE OR REPLACE VIEW v_difficulty_summary AS
+SELECT
+  model_id,
+  COUNT(*) as config_count,
+  MIN(year_level) as min_year,
+  MAX(year_level) as max_year,
+  COUNT(DISTINCT year_level) as year_levels_covered
+FROM difficulty_parameters
+GROUP BY model_id
+ORDER BY model_id;
+
+COMMENT ON VIEW v_difficulty_summary IS 'Summary statistics of difficulty configurations per model';
+
+
+-- View: Curated mapping coverage
+CREATE OR REPLACE VIEW v_mapping_coverage AS
+SELECT
+  model_id,
+  format,
+  theme,
+  COUNT(*) as mapping_count,
+  SUM(CASE WHEN active = TRUE THEN 1 ELSE 0 END) as active_count
+FROM curated_mappings
+GROUP BY model_id, format, theme
+ORDER BY model_id, format, theme;
+
+COMMENT ON VIEW v_mapping_coverage IS 'Coverage of curated mappings across models, formats, and themes';
+
+
+-- View: Question approval statistics
+CREATE OR REPLACE VIEW v_question_approval_stats AS
+SELECT
+  model_id,
+  format,
+  COUNT(*) as total_generated,
+  SUM(CASE WHEN approved = TRUE THEN 1 ELSE 0 END) as approved_count,
+  SUM(CASE WHEN approved = FALSE THEN 1 ELSE 0 END) as pending_count,
+  ROUND(AVG(generation_time_ms), 2) as avg_generation_time_ms,
+  ROUND(AVG(cognitive_load), 2) as avg_cognitive_load
+FROM generated_questions
+GROUP BY model_id, format
+ORDER BY model_id, format;
+
+COMMENT ON VIEW v_question_approval_stats IS 'Approval statistics and performance metrics for generated questions';
+
+
+-- ============================================
+-- COMPLETION MESSAGE
+-- ============================================
+
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Schema migration 001_initial_schema.sql completed successfully';
+  RAISE NOTICE 'Created 6 tables: difficulty_parameters, characters, items, scenario_templates, curated_mappings, generated_questions';
+  RAISE NOTICE 'Created 3 views: v_difficulty_summary, v_mapping_coverage, v_question_approval_stats';
+  RAISE NOTICE 'Next step: Run 002_rls_policies.sql to set up Row Level Security';
+END $$;

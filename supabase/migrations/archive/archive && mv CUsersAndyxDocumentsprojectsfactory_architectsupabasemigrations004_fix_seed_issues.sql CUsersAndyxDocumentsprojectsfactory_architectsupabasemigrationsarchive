@@ -1,0 +1,378 @@
+-- ============================================
+-- Factory Architect - Database Helper Functions
+-- Migration: 003_helper_functions.sql
+-- Created: 2025-10-01
+-- Description: Utility functions for question generation and admin tasks
+-- ============================================
+
+-- ============================================
+-- FUNCTION 1: Generate Default Curated Mappings
+-- ============================================
+
+-- Purpose: Auto-populate curated_mappings for a given model
+-- Usage: SELECT generate_default_mappings('ADDITION');
+CREATE OR REPLACE FUNCTION generate_default_mappings(p_model_id TEXT)
+RETURNS TABLE (
+  mapping_id UUID,
+  difficulty_level TEXT,
+  format TEXT,
+  theme TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  INSERT INTO curated_mappings (
+    model_id,
+    difficulty_param_id,
+    format,
+    theme,
+    weight
+  )
+  SELECT
+    p_model_id,
+    dp.id AS difficulty_param_id,
+    'DIRECT_CALCULATION' AS format,
+    'SHOPPING' AS theme,
+    1.0 AS weight
+  FROM difficulty_parameters dp
+  WHERE dp.model_id = p_model_id
+  ON CONFLICT (model_id, difficulty_param_id, format, theme) DO NOTHING
+  RETURNING id, (SELECT difficulty_level FROM difficulty_parameters WHERE id = difficulty_param_id), format, theme;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION generate_default_mappings IS 'Auto-generate default DIRECT_CALCULATION + SHOPPING mappings for a model';
+
+
+-- ============================================
+-- FUNCTION 2: Get Balanced Questions for Student App
+-- ============================================
+
+-- Purpose: Retrieve balanced batch of approved questions for a year level
+-- Usage: SELECT * FROM get_balanced_questions(3, 20);
+CREATE OR REPLACE FUNCTION get_balanced_questions(
+  p_year_level INTEGER,
+  p_batch_size INTEGER DEFAULT 20
+)
+RETURNS SETOF generated_questions AS $$
+BEGIN
+  RETURN QUERY
+  SELECT DISTINCT ON (gq.model_id, gq.format) gq.*
+  FROM generated_questions gq
+  INNER JOIN difficulty_parameters dp ON gq.difficulty_param_id = dp.id
+  WHERE
+    gq.approved = TRUE AND
+    dp.year_level = p_year_level
+  ORDER BY gq.model_id, gq.format, RANDOM()
+  LIMIT p_batch_size;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION get_balanced_questions IS 'Returns balanced set of approved questions for a year level';
+
+
+-- ============================================
+-- FUNCTION 3: Get Question Stats by Model
+-- ============================================
+
+-- Purpose: Retrieve statistics for generated questions by model
+-- Usage: SELECT * FROM get_question_stats_by_model();
+CREATE OR REPLACE FUNCTION get_question_stats_by_model()
+RETURNS TABLE (
+  model_id TEXT,
+  total_questions BIGINT,
+  approved_questions BIGINT,
+  pending_questions BIGINT,
+  approval_rate NUMERIC,
+  avg_generation_time_ms NUMERIC,
+  avg_cognitive_load NUMERIC
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    gq.model_id,
+    COUNT(*) AS total_questions,
+    COUNT(*) FILTER (WHERE gq.approved = TRUE) AS approved_questions,
+    COUNT(*) FILTER (WHERE gq.approved = FALSE) AS pending_questions,
+    ROUND(
+      (COUNT(*) FILTER (WHERE gq.approved = TRUE)::NUMERIC / COUNT(*)::NUMERIC) * 100,
+      2
+    ) AS approval_rate,
+    ROUND(AVG(gq.generation_time_ms), 2) AS avg_generation_time_ms,
+    ROUND(AVG(gq.cognitive_load), 2) AS avg_cognitive_load
+  FROM generated_questions gq
+  GROUP BY gq.model_id
+  ORDER BY gq.model_id;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION get_question_stats_by_model IS 'Returns statistics about generated questions grouped by model';
+
+
+-- ============================================
+-- FUNCTION 4: Search Questions (Full-Text)
+-- ============================================
+
+-- Purpose: Full-text search across question text
+-- Usage: SELECT * FROM search_questions('apple', 5);
+CREATE OR REPLACE FUNCTION search_questions(
+  p_search_term TEXT,
+  p_limit INTEGER DEFAULT 10
+)
+RETURNS SETOF generated_questions AS $$
+BEGIN
+  RETURN QUERY
+  SELECT *
+  FROM generated_questions
+  WHERE
+    to_tsvector('english', question_text) @@ plainto_tsquery('english', p_search_term)
+    AND approved = TRUE
+  ORDER BY ts_rank(to_tsvector('english', question_text), plainto_tsquery('english', p_search_term)) DESC
+  LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION search_questions IS 'Full-text search on approved question text';
+
+
+-- ============================================
+-- FUNCTION 5: Bulk Approve Questions
+-- ============================================
+
+-- Purpose: Approve multiple questions at once
+-- Usage: SELECT bulk_approve_questions(ARRAY['uuid1', 'uuid2'], 'admin_user_id');
+CREATE OR REPLACE FUNCTION bulk_approve_questions(
+  p_question_ids UUID[],
+  p_approved_by UUID
+)
+RETURNS TABLE (
+  question_id UUID,
+  success BOOLEAN,
+  message TEXT
+) AS $$
+DECLARE
+  v_question_id UUID;
+BEGIN
+  FOREACH v_question_id IN ARRAY p_question_ids
+  LOOP
+    BEGIN
+      UPDATE generated_questions
+      SET
+        approved = TRUE,
+        approved_at = NOW(),
+        approved_by = p_approved_by
+      WHERE id = v_question_id AND approved = FALSE;
+
+      IF FOUND THEN
+        RETURN QUERY SELECT v_question_id, TRUE, 'Approved successfully'::TEXT;
+      ELSE
+        RETURN QUERY SELECT v_question_id, FALSE, 'Question not found or already approved'::TEXT;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      RETURN QUERY SELECT v_question_id, FALSE, SQLERRM::TEXT;
+    END;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION bulk_approve_questions IS 'Approve multiple questions in a single transaction';
+
+
+-- ============================================
+-- FUNCTION 6: Get Random Question by Criteria
+-- ============================================
+
+-- Purpose: Get a random question matching specific criteria
+-- Usage: SELECT * FROM get_random_question('ADDITION', 3);
+CREATE OR REPLACE FUNCTION get_random_question(
+  p_model_id TEXT DEFAULT NULL,
+  p_year_level INTEGER DEFAULT NULL,
+  p_format TEXT DEFAULT NULL,
+  p_theme TEXT DEFAULT NULL
+)
+RETURNS SETOF generated_questions AS $$
+BEGIN
+  RETURN QUERY
+  SELECT gq.*
+  FROM generated_questions gq
+  INNER JOIN difficulty_parameters dp ON gq.difficulty_param_id = dp.id
+  WHERE
+    gq.approved = TRUE
+    AND (p_model_id IS NULL OR gq.model_id = p_model_id)
+    AND (p_year_level IS NULL OR dp.year_level = p_year_level)
+    AND (p_format IS NULL OR gq.format = p_format)
+    AND (p_theme IS NULL OR gq.theme = p_theme)
+  ORDER BY RANDOM()
+  LIMIT 1;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION get_random_question IS 'Get a random approved question matching optional criteria';
+
+
+-- ============================================
+-- FUNCTION 7: Validate Difficulty Parameters JSON
+-- ============================================
+
+-- Purpose: Validate that difficulty parameters have required fields
+-- Usage: SELECT validate_difficulty_params(parameters_json, 'ADDITION');
+CREATE OR REPLACE FUNCTION validate_difficulty_params(
+  p_params JSONB,
+  p_model_id TEXT
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_required_fields TEXT[];
+BEGIN
+  -- Define required fields per model type
+  CASE p_model_id
+    WHEN 'ADDITION', 'SUBTRACTION', 'MULTIPLICATION', 'DIVISION' THEN
+      v_required_fields := ARRAY['max_value', 'operands'];
+    WHEN 'PERCENTAGE' THEN
+      v_required_fields := ARRAY['percentage_values', 'of_values'];
+    WHEN 'FRACTION' THEN
+      v_required_fields := ARRAY['denominators', 'numerator_max'];
+    ELSE
+      -- Generic validation: just check that params is not empty
+      RETURN p_params IS NOT NULL AND p_params != '{}'::JSONB;
+  END CASE;
+
+  -- Check all required fields exist
+  FOR i IN 1..array_length(v_required_fields, 1)
+  LOOP
+    IF NOT (p_params ? v_required_fields[i]) THEN
+      RETURN FALSE;
+    END IF;
+  END LOOP;
+
+  RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION validate_difficulty_params IS 'Validate difficulty parameters JSON has required fields for model';
+
+
+-- ============================================
+-- FUNCTION 8: Get Difficulty Progression Path
+-- ============================================
+
+-- Purpose: Get ordered progression path for a model
+-- Usage: SELECT * FROM get_difficulty_progression('ADDITION');
+CREATE OR REPLACE FUNCTION get_difficulty_progression(p_model_id TEXT)
+RETURNS TABLE (
+  difficulty_level TEXT,
+  year_level INTEGER,
+  sub_level INTEGER,
+  parameters JSONB
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    dp.difficulty_level,
+    dp.year_level,
+    dp.sub_level,
+    dp.parameters
+  FROM difficulty_parameters dp
+  WHERE dp.model_id = p_model_id
+  ORDER BY dp.year_level ASC, dp.sub_level ASC;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION get_difficulty_progression IS 'Returns ordered difficulty progression for a model';
+
+
+-- ============================================
+-- FUNCTION 9: Clean Up Unapproved Questions
+-- ============================================
+
+-- Purpose: Delete unapproved questions older than N days
+-- Usage: SELECT cleanup_old_unapproved_questions(30);
+CREATE OR REPLACE FUNCTION cleanup_old_unapproved_questions(p_days_old INTEGER DEFAULT 30)
+RETURNS TABLE (
+  deleted_count BIGINT,
+  message TEXT
+) AS $$
+DECLARE
+  v_deleted_count BIGINT;
+BEGIN
+  DELETE FROM generated_questions
+  WHERE
+    approved = FALSE
+    AND created_at < NOW() - (p_days_old || ' days')::INTERVAL;
+
+  GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+
+  RETURN QUERY SELECT v_deleted_count, format('Deleted %s unapproved questions older than %s days', v_deleted_count, p_days_old)::TEXT;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION cleanup_old_unapproved_questions IS 'Delete unapproved questions older than specified days';
+
+
+-- ============================================
+-- GRANT EXECUTE PERMISSIONS
+-- ============================================
+
+GRANT EXECUTE ON FUNCTION generate_default_mappings TO authenticated;
+GRANT EXECUTE ON FUNCTION get_balanced_questions TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_question_stats_by_model TO authenticated;
+GRANT EXECUTE ON FUNCTION search_questions TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION bulk_approve_questions TO authenticated;
+GRANT EXECUTE ON FUNCTION get_random_question TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION validate_difficulty_params TO authenticated;
+GRANT EXECUTE ON FUNCTION get_difficulty_progression TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION cleanup_old_unapproved_questions TO authenticated;
+
+
+-- ============================================
+-- CREATE UTILITY VIEW: Function Catalog
+-- ============================================
+
+CREATE OR REPLACE VIEW v_helper_functions AS
+SELECT
+  routine_name AS function_name,
+  routine_type AS function_type,
+  data_type AS return_type,
+  routine_definition AS definition_snippet
+FROM information_schema.routines
+WHERE routine_schema = 'public'
+  AND routine_name IN (
+    'generate_default_mappings',
+    'get_balanced_questions',
+    'get_question_stats_by_model',
+    'search_questions',
+    'bulk_approve_questions',
+    'get_random_question',
+    'validate_difficulty_params',
+    'get_difficulty_progression',
+    'cleanup_old_unapproved_questions'
+  )
+ORDER BY routine_name;
+
+COMMENT ON VIEW v_helper_functions IS 'Catalog of all helper functions available';
+
+
+-- ============================================
+-- COMPLETION MESSAGE
+-- ============================================
+
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Helper functions created successfully';
+  RAISE NOTICE '';
+  RAISE NOTICE '📚 AVAILABLE FUNCTIONS:';
+  RAISE NOTICE '  1. generate_default_mappings(model_id) - Auto-create default mappings';
+  RAISE NOTICE '  2. get_balanced_questions(year_level, batch_size) - Student question fetching';
+  RAISE NOTICE '  3. get_question_stats_by_model() - Question statistics';
+  RAISE NOTICE '  4. search_questions(search_term, limit) - Full-text search';
+  RAISE NOTICE '  5. bulk_approve_questions(question_ids[], user_id) - Batch approval';
+  RAISE NOTICE '  6. get_random_question(model_id, year, format, theme) - Random question';
+  RAISE NOTICE '  7. validate_difficulty_params(params, model_id) - Parameter validation';
+  RAISE NOTICE '  8. get_difficulty_progression(model_id) - Progression path';
+  RAISE NOTICE '  9. cleanup_old_unapproved_questions(days) - Cleanup utility';
+  RAISE NOTICE '';
+  RAISE NOTICE '🧪 TO LIST ALL FUNCTIONS:';
+  RAISE NOTICE '  SELECT * FROM v_helper_functions;';
+  RAISE NOTICE '';
+  RAISE NOTICE '🎉 Database schema setup complete!';
+  RAISE NOTICE 'Next step: Run seed scripts to populate data';
+END $$;
